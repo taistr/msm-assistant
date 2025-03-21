@@ -4,6 +4,7 @@ import tempfile
 import wave
 from pathlib import Path
 
+import chromadb
 import numpy as np
 import sounddevice as sd
 import soundfile as sf

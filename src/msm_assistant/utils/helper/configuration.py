@@ -25,11 +25,14 @@ class Configuration:
             logger.error(e)
             sys.exit(1)
 
-        self._config = config
-        self.openai_api_key = config["base"]["openai_api_key"]
-        self.model = config["base"]["model"]
-        self.voice = config["base"]["voice"]
-        self.prompt = config["base"]["prompt"]
+        self._config: dict = config
+        base: dict = config["base"]
+        self.model: str = base["model"]
+        self.voice: str = base["voice"]
+        self.prompt: str = base["prompt"]
+
+        extra: dict = config["extra"]
+        self.database: dict[str, any] | None = extra.get("database")
 
     @staticmethod
     def _verify(config: dict[str, any]):
@@ -39,20 +42,25 @@ class Configuration:
                 "The configuration file must contain a 'base' section"
             )
 
-        required_keys = ["openai_api_key", "model", "voice", "prompt"]
-        for key in required_keys:
+        if "extra" in config and not isinstance(config["extra"], dict):
+            raise ConfigurationError(
+                "The 'extra' field must be a dictionary with additional fields"
+            )
+
+        REQUIRED_KEYS = ["model", "voice", "prompt"]
+        for key in REQUIRED_KEYS:
             if key not in config["base"]:
                 raise ConfigurationError(
                     f"Missing required key '{key}' in 'base' section"
                 )
 
-        valid_models = ["gpt-4o-audio-preview", "gpt-4o-mini-audio-preview"]
-        if config["base"]["model"] not in valid_models:
+        VALID_MODELS = ["gpt-4o-audio-preview", "gpt-4o-mini-audio-preview"]
+        if config["base"]["model"] not in VALID_MODELS:
             raise ConfigurationError(
-                f"Invalid model '{config['base']['model']}. Models must be one of {valid_models}"
+                f"Invalid model '{config['base']['model']}. Models must be one of {VALID_MODELS}"
             )
 
-        valid_voices = [
+        VALID_VOICES = [
             "alloy",
             "ash",
             "coral",
@@ -63,9 +71,9 @@ class Configuration:
             "sage",
             "shimmer",
         ]
-        if config["base"]["voice"] not in valid_voices:
+        if config["base"]["voice"] not in VALID_VOICES:
             raise ConfigurationError(
-                f"Invalid voice '{config['base']['voice']}. Voices must be one of {valid_voices}"
+                f"Invalid voice '{config['base']['voice']}. Voices must be one of {VALID_VOICES}"
             )
 
         if config["base"]["prompt"] == "":

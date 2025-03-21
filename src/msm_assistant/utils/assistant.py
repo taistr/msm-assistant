@@ -4,12 +4,10 @@ import tempfile
 import wave
 from pathlib import Path
 
-import chromadb
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
 from openai import OpenAI
-from pynput import keyboard
 
 from .helper.configuration import Configuration
 from .helper.message import Audio, Conversation, Message, MessageRole
@@ -39,23 +37,7 @@ class Assistant:
         SAMPLE_RATE = 44100
         CHANNELS = 1
 
-        recording = True
         chunks = []
-
-        # Listen for the q key in a separate thread
-        def on_press(key):
-            nonlocal recording
-            try:
-                if key.char == "q":
-                    recording = False
-                    logger.info("Stopping recording...")
-                    return False
-            except AttributeError:  # ! special key pressed: shift, ctrl, alt
-                pass
-
-        listener = keyboard.Listener(on_press=on_press)
-        listener.daemon = True
-        listener.start()
 
         # start the stream
         stream = sd.InputStream(
@@ -63,16 +45,16 @@ class Assistant:
         )
 
         # accumulate audio samples
-        logger.info("Recording... Press 'q' to stop.")
-        with stream:
-            while recording:  # TODO: implement an upper limit
-                audio_chunk, overflowed = stream.read(SAMPLE_RATE // 10)
-                if overflowed:
-                    logger.warning(
-                        "Warning: Audio buffer overflowed - system can't keep up with data rate"
-                    )
-                chunks.append(audio_chunk)
-        logger.info("Recording finished.")
+        print("Recording... Press Ctrl+C to stop.")
+        try:
+            with stream:
+                while True:  # Run until interrupted
+                    audio_chunk, overflowed = stream.read(SAMPLE_RATE // 10)
+                    if overflowed:
+                        logger.warning("Warning: Audio buffer overflowed")
+                    chunks.append(audio_chunk)
+        except KeyboardInterrupt:
+            logger.info("Recording finished.")
 
         # store audio samples
         if chunks:

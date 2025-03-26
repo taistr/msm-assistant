@@ -3,9 +3,7 @@ import argparse
 import asyncio
 import json
 import logging
-import os
 import uuid
-from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -48,6 +46,7 @@ class Chunk:
     @property
     def text(self) -> str:
         return self._text
+
     @property
     def id(self) -> str:
         return self._id
@@ -80,6 +79,7 @@ class Encoder:
             model=self._model,
         )
         return response.data[0].embedding
+
     async def encode_collection(self, chunks: list[str]) -> list[list[float]]:
         tasks = [self.encode(chunk) for chunk in chunks]
         encodings = await tqdm.gather(*tasks, total=len(tasks), desc="Embedding")
@@ -148,6 +148,7 @@ class Database:
                 ],
             )
             logger.debug(result)
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(

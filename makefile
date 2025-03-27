@@ -1,4 +1,4 @@
-.PHONY: install lint fmt check test
+.PHONY: install lint fmt test
 
 install:
 	poetry install

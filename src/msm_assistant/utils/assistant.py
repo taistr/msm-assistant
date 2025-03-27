@@ -1,13 +1,16 @@
 import base64
+import enum
 import logging
 import tempfile
 import wave
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
 from openai import OpenAI
+from transitions import Machine
 
 from .helper.configuration import Configuration
 from .helper.message import Audio, Conversation, Message, MessageRole
@@ -18,7 +21,24 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class Arguments:
+    user_recording_path: Path | None
+    model_output_path: Path | None
+
+
+class States(enum.Enum):
+    ERROR = "error"
+    RESET = "reset"
+    IDLE = "idle"
+    LISTENING = "listening"
+    PROCESSING = "processing"
+    SPEAKING = "speaking"
+
+
 class Assistant:
+    states = [state.value for state in States]
+
     def __init__(self, config: Configuration, directory: Path):
         self._config = config
         self._working_directory = directory
@@ -28,20 +48,89 @@ class Assistant:
             Message.create(MessageRole.DEVELOPER, content=self._config.prompt)
         )
 
+        self._args = Arguments(user_recording_path=None, model_output_path=None)
+        self._machine = Machine(
+            model=self, states=Assistant.states, initial=States.IDLE.value
+        )
+        self._machine.add_transition(
+            source=States.IDLE.value,
+            dest=States.LISTENING.value,
+            trigger="start_listening",
+        )
+        self._machine.add_transition(
+            source=States.LISTENING.value,
+            dest=States.PROCESSING.value,
+            trigger="start_processing",
+        )
+        self._machine.add_transition(
+            source=States.PROCESSING.value,
+            dest=States.SPEAKING.value,
+            trigger="start_speaking",
+        )
+        self._machine.add_transition(
+            source=States.SPEAKING.value, dest=States.IDLE.value, trigger="start_idle"
+        )
+        self._machine.add_transition(
+            source="*", dest=States.ERROR.value, trigger="start_error"
+        )
+
+    def on_enter_idle(self):
+        self.start_listening()
+
+    def on_enter_listening(self):
+        logger.info("Entered LISTENING state")
+
+        self._args.user_recording_path = self._record_audio()
+
+        self.start_processing()
+        return
+
+    def on_enter_processing(self):
+        logger.info("Entered PROCESSING state")
+
+        user_recording_path = self._args.user_recording_path
+        if user_recording_path:
+            transcription = self._transcribe_audio(user_recording_path)
+            logger.info(f"User said: {transcription}")
+        else:
+            self.start_error()
+            return
+
+        # Update the convo
+        self._conversation.add(Message.create(MessageRole.USER, content=transcription))
+
+        # Create response
+        model_output_path, audio_id = self._create_response()
+        self._args.model_output_path = model_output_path
+
+        # Update conversation state
+        self._conversation.add(
+            Message.create(MessageRole.ASSISTANT, audio=Audio(id=audio_id))
+        )
+
+        self.start_speaking()
+        return
+
+    def on_enter_speaking(self):
+        logger.info("Entered SPEAKING state")
+
+        model_output_path = self._args.model_output_path
+        self._play_audio(model_output_path)
+
+        self.start_idle()
+        return
+
     def _record_audio(
-        self,
-    ) -> (
-        Path | None
-    ):  # TODO: modify this to allow starting and stopping of recording at will
-        AUDIO_FILE_NAME = "user.wav"
-        SAMPLE_RATE = 44100
-        CHANNELS = 1
+        self, file_name: str = "user.wav", sample_rate: int = 44100, channels: int = 1
+    ):
+        FRAME_DIVISOR = 10
+        SAMPLE_CONFIG = {"type": np.int16, "byte_width": 2}
 
         chunks = []
 
         # start the stream
         stream = sd.InputStream(
-            samplerate=SAMPLE_RATE, channels=CHANNELS, dtype=np.int16
+            samplerate=sample_rate, channels=channels, dtype=SAMPLE_CONFIG["type"]
         )
 
         # accumulate audio samples
@@ -49,7 +138,7 @@ class Assistant:
         try:
             with stream:
                 while True:  # Run until interrupted
-                    audio_chunk, overflowed = stream.read(SAMPLE_RATE // 10)
+                    audio_chunk, overflowed = stream.read(sample_rate // FRAME_DIVISOR)
                     if overflowed:
                         logger.warning("Warning: Audio buffer overflowed")
                     chunks.append(audio_chunk)
@@ -60,11 +149,13 @@ class Assistant:
         if chunks:
             audio_array = np.concatenate(chunks)
 
-            file_path = self._working_directory / AUDIO_FILE_NAME
+            file_path = self._working_directory / file_name
             with wave.open(str(file_path), "wb") as wf:
-                wf.setnchannels(CHANNELS)
-                wf.setsampwidth(2)  # * we are using int16 values - 2 bytes
-                wf.setframerate(SAMPLE_RATE)
+                wf.setnchannels(channels)
+                wf.setsampwidth(
+                    SAMPLE_CONFIG["byte_width"]
+                )  # * we are using int16 values - 2 bytes
+                wf.setframerate(sample_rate)
                 wf.writeframes(audio_array.tobytes())
 
             logger.info(f"Audio saved to {file_path}")
@@ -73,8 +164,8 @@ class Assistant:
             logger.warning("No audio was recorded")
             return None
 
-    def _transcribe_audio(self, audio_file_path: Path) -> str:
-        with open(audio_file_path, "rb") as file:  # TODO: implement exception handling
+    def _transcribe_audio(self, file_path: Path) -> str:
+        with open(file_path, "rb") as file:  # TODO: implement exception handling
             transcription = self._openai_client.audio.transcriptions.create(
                 model="whisper-1",
                 file=file,
@@ -83,9 +174,7 @@ class Assistant:
 
         return transcription
 
-    def _create_response(self) -> tuple[Path, dict]:
-        AUDIO_FILE_NAME = "assistant.wav"
-
+    def _create_response(self, file_name: str = "assistant.wav") -> tuple[Path, dict]:
         completion = self._openai_client.chat.completions.create(
             model=self._config.model,
             modalities=["text", "audio"],
@@ -94,43 +183,19 @@ class Assistant:
         )
 
         wav_bytes = base64.b64decode(completion.choices[0].message.audio.data)
-        file_path = self._working_directory / AUDIO_FILE_NAME
+        file_path = self._working_directory / file_name
         with open(file_path, "wb") as f:
             f.write(wav_bytes)
 
         return [file_path, completion.choices[0].message.audio.id]
 
-    def _play_audio(self, filepath: Path):
+    def _play_audio(self, file_path: Path):
         try:
-            audio_data, fs = sf.read(filepath, dtype="float32")
+            audio_data, fs = sf.read(file_path, dtype="float32")
             sd.play(audio_data, fs)
             sd.wait()
         except Exception as e:
             print(f"Error playing audio: {e}")
-
-    def turn(self):
-        # Record audio
-        user_recording_path = self._record_audio()
-
-        if user_recording_path:
-            transcription = self._transcribe_audio(user_recording_path)
-            logger.info(f"User said: {transcription}")
-        else:
-            return
-
-        # Update the convo
-        self._conversation.add(Message.create(MessageRole.USER, content=transcription))
-
-        # Create response
-        model_output_path, audio_id = self._create_response()
-
-        # Update conversation state
-        self._conversation.add(
-            Message.create(MessageRole.ASSISTANT, audio=Audio(id=audio_id))
-        )
-
-        # Play response
-        self._play_audio(model_output_path)
 
 
 def run(config: dict):
@@ -141,7 +206,6 @@ def run(config: dict):
         assistant = Assistant(config, temp_path)
 
         try:
-            while True:
-                assistant.turn()
+            assistant.on_enter_idle()
         except KeyboardInterrupt:
-            logger.info("\nConversation ended by user")
+            logger.info("Conversation ended by user")

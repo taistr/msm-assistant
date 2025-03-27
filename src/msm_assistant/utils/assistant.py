@@ -2,11 +2,13 @@ import base64
 import enum
 import logging
 import tempfile
+import threading
 import wave
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+import pygame
 import sounddevice as sd
 import soundfile as sf
 from openai import OpenAI
@@ -36,6 +38,34 @@ class States(enum.Enum):
     SPEAKING = "speaking"
 
 
+class Controller:
+    def __init__(self):
+        self.alive = True
+        self._joystick = None
+
+        pygame.init()
+        pygame.joystick.init()
+
+        if pygame.joystick.get_count() == 0:
+            self.alive = False
+            raise ValueError("No gamepad detected")
+
+        self._joystick = pygame.joystick.Joystick(0)
+        self._joystick.init()
+        logger.info(f"Joystick initialized: {self._joystick.get_name()}")
+
+    def listen(self):
+        thread = threading.Thread(target=self._listener, daemon=True)
+        thread.start()
+
+    def _listener(self):
+        while self.alive:
+            pygame.event.pump()
+            for event in pygame.event.get():
+                if event.type == pygame.JOYBUTTONDOWN:
+                    logger.info(f"Button {event.button} pressed")
+
+
 class Assistant:
     states = [state.value for state in States]
 
@@ -43,11 +73,17 @@ class Assistant:
         self._config = config
         self._working_directory = directory
 
+        # TODO: Set up controller
+        self._controller = Controller()
+        self._controller.listen()
+
+        # Set up conversation
         self._openai_client = OpenAI()
         self._conversation = Conversation(
             Message.create(MessageRole.DEVELOPER, content=self._config.prompt)
         )
 
+        # Set up machine
         self._args = Arguments(user_recording_path=None, model_output_path=None)
         self._machine = Machine(
             model=self, states=Assistant.states, initial=States.IDLE.value

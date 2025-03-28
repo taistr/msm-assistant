@@ -230,7 +230,7 @@ class Assistant:
 def run(config: dict):
     # Define a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path("/home/msm_assistant_test/Documents/msm-assistant/temp")
+        temp_path = Path(temp_dir)
         logger.info(f"Temporary directory created: {temp_path}")
         assistant = Assistant(config, temp_path)
 

@@ -2,6 +2,7 @@ import base64
 import enum
 import logging
 import tempfile
+import threading
 import wave
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,6 +14,7 @@ from openai import OpenAI
 from transitions import Machine
 
 from .helper.configuration import Configuration
+from .helper.controller import JoyCon, JoyConButton, JoyConButtonState
 from .helper.message import Audio, Conversation, Message, MessageRole
 
 logging.basicConfig(
@@ -48,6 +50,8 @@ class Assistant:
             Message.create(MessageRole.DEVELOPER, content=self._config.prompt)
         )
 
+        self._controller = JoyCon()
+
         self._args = Arguments(user_recording_path=None, model_output_path=None)
         self._machine = Machine(
             model=self, states=Assistant.states, initial=States.IDLE.value
@@ -75,6 +79,14 @@ class Assistant:
         )
 
     def on_enter_idle(self):
+        logger.info("Entered IDLE state")
+        logger.info("Press A to start recording")
+
+        while True:
+            button = self._controller.listen(JoyConButtonState.PRESSED)
+            if button == JoyConButton.A:
+                break
+
         self.start_listening()
 
     def on_enter_listening(self):
@@ -127,6 +139,15 @@ class Assistant:
         SAMPLE_CONFIG = {"type": np.int16, "byte_width": 2}
 
         chunks = []
+        stop_event = threading.Event()
+
+        def button_listener():
+            while not stop_event.is_set():
+                button = self._controller.listen(JoyConButtonState.PRESSED)
+                if button == JoyConButton.A:
+                    stop_event.set()
+
+        listener_thread = threading.Thread(target=button_listener, daemon=True)
 
         # start the stream
         stream = sd.InputStream(
@@ -134,16 +155,24 @@ class Assistant:
         )
 
         # accumulate audio samples
-        print("Recording... Press Ctrl+C to stop.")
+        print("Recording... Press A to stop.")
         try:
+            listener_thread.start()
+
             with stream:
-                while True:  # Run until interrupted
+                while not stop_event.is_set():  # Run until interrupted
                     audio_chunk, overflowed = stream.read(sample_rate // FRAME_DIVISOR)
                     if overflowed:
                         logger.warning("Warning: Audio buffer overflowed")
                     chunks.append(audio_chunk)
-        except KeyboardInterrupt:
-            logger.info("Recording finished.")
+        except (
+            Exception
+        ) as e:  #! if an exception occurs here then the controller thread lives on!
+            # TODO: fix threads staying alive
+            logger.error(f"Error occurred during recording: {e}")
+        finally:
+            stop_event.set()
+            listener_thread.join()
 
         # store audio samples
         if chunks:
@@ -201,7 +230,7 @@ class Assistant:
 def run(config: dict):
     # Define a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
+        temp_path = Path("/home/msm_assistant_test/Documents/msm-assistant/temp")
         logger.info(f"Temporary directory created: {temp_path}")
         assistant = Assistant(config, temp_path)
 

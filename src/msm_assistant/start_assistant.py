@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import asyncio
 import logging
 from pathlib import Path
 
@@ -28,7 +29,7 @@ def main():
     args = parse_arguments()
 
     config = Configuration(Path(args.config))
-    run(config)
+    asyncio.run(run(config))
 
 
 if __name__ == "__main__":

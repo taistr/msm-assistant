@@ -51,22 +51,14 @@ class DeveloperMessage(Message):
 
 
 # * Assistant message
-class Audio:
-    def __init__(self, id: str):
-        self._id = id
-
-    def to_dict(self) -> dict:
-        return {"id": self._id}
-
-
 class AssistantMessage(Message):
     role = MessageRole.ASSISTANT.value
 
-    def __init__(self, audio: Audio):
-        self.audio = audio
+    def __init__(self, content: str):
+        self.content = content
 
     def to_dict(self) -> dict:
-        return {"role": self.role, "audio": self.audio.to_dict()}
+        return {"role": self.role, "content": self.content}
 
 
 class Conversation:

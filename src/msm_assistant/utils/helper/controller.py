@@ -1,8 +1,9 @@
+import asyncio
 import logging
-import platform
-import time
+import uuid
 from enum import Enum
 from pathlib import Path
+from typing import Awaitable, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -10,8 +11,6 @@ try:
     import evdev
 except ImportError:
     logger.warning("JoyCon control is only supported on linux")
-
-JOYCON_DEVICE_NAMES = ["Nintendo Switch Right Joy-Con", "Joy-Con (R)"]
 
 
 class JoyConButton(Enum):
@@ -32,112 +31,121 @@ JOYCON_BUTTONS = [member.value for member in JoyConButton]
 
 class JoyConButtonState(Enum):
     PRESSED = 1
-    RELEASED = 2
-
-
-class JoyConError(Exception):
-    def __init__(self, msg: str):
-        super().__init__(msg)
+    RELEASED = 0
 
 
 class JoyCon:
-    """A class that listens for an input from a JoyCon controller and returns the input"""
-
     def __init__(self, max_attempts: int = 5):
-        if platform.system() != "Linux":
-            raise OSError("JoyCon control is only supported on Linux")
+        #! will only work on Linux due to use of evdev
+        self._device_name = ["Nintendo Switch Right Joy-Con", "Joy-Con (R)"]
         self._max_attempts = max_attempts
 
         self._joy_con = None
-        self._connect()
+        self._task = None
+        self._listeners: dict[
+            str, Callable[[JoyConButton, JoyConButtonState], Awaitable[None]]
+        ] = {}
 
-    def listen(self, state: JoyConButtonState):
-        SLEEP_TIME_S = 0.1
-
-        if not self._joy_con:
-            logger.warning("Could not find a Joy-Con - attempting to reconnect")
-            self._connect()
-
-        self._flush_events(self._joy_con)
-        logger.info("Started listening for Joy-Con inputs")
-        valid_buttons = set(JOYCON_BUTTONS)
-
-        while True:
-            event = self._joy_con.read_one()
-            if event is None:
-                time.sleep(SLEEP_TIME_S)
-                continue
-
-            parsed_event = evdev.categorize(event)
-            if not isinstance(parsed_event, evdev.KeyEvent):
-                continue
-
-            keycodes = (
-                list(parsed_event.keycode)
-                if isinstance(parsed_event.keycode, tuple)
-                else [parsed_event.keycode]
-            )
-            if parsed_event.keystate != state.value:
-                continue
-
-            common_buttons = set(keycodes) & valid_buttons
-            if common_buttons:
-                button_string = next(iter(common_buttons))
-                return JoyConButton(button_string)
-
-    def _connect(self):
-        SLEEP_TIME_S = 1
+    async def _connect(self) -> None:
+        SLEEP_TIME = 1  # seconds
 
         attempts = 0
         while attempts < self._max_attempts:
-            try:
-                device_file = self._find_joycon()
-
-                if device_file:
-                    self._joy_con = evdev.InputDevice(device_file)
+            for path in evdev.list_devices():
+                device = evdev.InputDevice(path)
+                if device.name in self._device_name:
+                    logger.info(f"Connected to JoyCon: {device.name} at {path}")
+                    self._joy_con = device
                     return
-            except JoyConError:
-                time.sleep(SLEEP_TIME_S)
-                attempts += 1
 
-        raise JoyConError(
-            f"Failed to connect to a Joy-Con after {self._max_attempts} attempts"
-        )
+            # * could not find a device matching the JoyCon device name
+            attempts += 1
+            logger.warning("JoyCon not found, retrying ...")
+            await asyncio.sleep(SLEEP_TIME)
 
-    def _find_joycon(self) -> Path | None:
-        for path in evdev.list_devices():
-            dev = evdev.InputDevice(path)
-            if dev.name in JOYCON_DEVICE_NAMES:
-                logger.info(f"Using {dev.name} at: {path}")
-                return Path(path)
+        raise RuntimeError("Failed connec to JoyCon after several attempts")
 
-        raise JoyConError("Could not find a Joy-Con device")
+    async def listen(self):
+        self._task = asyncio.create_task(self._read_events())
 
-    @staticmethod
-    def _flush_events(device: evdev.InputDevice):
-        """Read and discard any pending events."""
-        while True:
-            event = device.read_one()  # non-blocking read
-            if event is None:
-                break
+    async def stop(self):
+        if self._task:
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+            finally:
+                self._task = None
+
+    async def add_listener(
+        self, callback: Callable[[JoyConButton, JoyConButtonState], Awaitable[None]]
+    ) -> str:
+        listener_id = str(uuid.uuid4())
+        self._listeners[listener_id] = callback
+        return listener_id
+
+    async def remove_listener(self, id: str):
+        if id in self._listeners.keys():
+            self._listeners.pop(id)
+
+    async def _read_events(self):
+        """Main async input loop. Call once to keep reading events and dispatching to listeners."""
+        if not self._joy_con:
+            await self._connect()
+
+        async for event in self._joy_con.async_read_loop():
+            parsed = evdev.categorize(event)
+            if not isinstance(parsed, evdev.KeyEvent):
+                continue
+
+            keycodes = (
+                list(parsed.keycode)
+                if isinstance(parsed.keycode, tuple)
+                else [parsed.keycode]
+            )
+
+            common_keycode = set(keycodes) & set(JOYCON_BUTTONS)
+            if common_keycode:
+                button = JoyConButton(next(iter(common_keycode)))
+                state = JoyConButtonState(parsed.keystate)
+
+                for callback in self._listeners.values():
+                    await callback(button, state)
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
+async def joycon_listener(button: JoyConButton, state: JoyConButtonState):
+    """Example listener that prints the received button and state."""
+    print(f"JoyCon event: {button.name} - {state.name}")
 
+
+async def main():
+    # Create JoyCon instance (this will start connecting asynchronously)
+    joycon = JoyCon(max_attempts=5)
+
+    print("JoyCon listen starting. Waiting for input events... (Press Ctrl+C to exit)")
     try:
-        joycon = JoyCon()
-        print("Waiting for a Joy-Con button press...")
+        await joycon.listen()
+
+        # Register our listener callback
         while True:
-            button = joycon.listen(JoyConButtonState.PRESSED)
-            print(f"Detected Joy-Con button press: {button.name} ({button.value})")
-    except OSError as e:
-        print(f"Platform error: {e}")
-    except JoyConError as e:
-        print(f"JoyCon error: {e}")
+            listener_id = await joycon.add_listener(joycon_listener)
+            print("Added listener")
+
+            await asyncio.sleep(5)
+
+            await joycon.remove_listener(listener_id)
+            print("Removed listener")
+
+            await asyncio.sleep(5)
+
     except KeyboardInterrupt:
-        print("\nExiting gracefully.")
+        print("Keyboard interrupt detected.")
+    finally:
+        # Ensure the JoyCon listener is stopped before exiting
+        await joycon.stop()
+        print("JoyCon listener stopped. Exiting")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

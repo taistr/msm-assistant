@@ -2,7 +2,6 @@ import asyncio
 import logging
 import uuid
 from enum import Enum
-from pathlib import Path
 from typing import Awaitable, Callable
 
 logger = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ class JoyConButtonState(Enum):
 
 class JoyCon:
     def __init__(self, max_attempts: int = 5):
-        #! will only work on Linux due to use of evdev
+        # ! will only work on Linux due to use of evdev
         self._device_name = ["Nintendo Switch Right Joy-Con", "Joy-Con (R)"]
         self._max_attempts = max_attempts
 

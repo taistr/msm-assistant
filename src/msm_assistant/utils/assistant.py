@@ -10,9 +10,7 @@ from typing import Optional
 
 import numpy as np
 import sounddevice as sd
-import soundfile as sf
-from openai import AsyncOpenAI, OpenAI
-from openai.helpers import LocalAudioPlayer
+from openai import AsyncOpenAI
 from transitions.extensions.asyncio import AsyncMachine
 
 from .helper.configuration import Configuration
@@ -58,7 +56,7 @@ class Assistant:
         )  # TODO: make this a child class of a parent "controller" class with generic listen, add_listener and remove_listener methods
         self._openai_client = AsyncOpenAI()
         self._conversation = Conversation(
-            Message.create(MessageRole.DEVELOPER, content=self._config.prompt)
+            Message.create(MessageRole.DEVELOPER, content=self._config.chat.prompt)
         )
 
         self._machine = AsyncMachine(
@@ -191,13 +189,12 @@ class Assistant:
 
     async def _generate_speech(self, text: str, stop_flag: asyncio.Event):
         SAMPLE_RATE = 24000  # OpenAI's TTS default rate
-        INSTRUCTIONS = """Voice: Gruff, fast-talking, and a little worn-out, like a New York cabbie who's seen it all but still keeps things moving.\n\nTone: Slightly exasperated but still functional, with a mix of sarcasm and no-nonsense efficiency.\n\nDialect: Strong New York accent, with dropped \"r\"s, sharp consonants, and classic phrases like whaddaya and lemme guess.\n\nPronunciation: Quick and clipped, with a rhythm that mimics the natural hustle of a busy city conversation.\n\nFeatures: Uses informal, straight-to-the-point language, throws in some dry humor, and keeps the energy just on the edge of impatience but still helpful."""
 
         async with self._openai_client.audio.speech.with_streaming_response.create(
-            model="gpt-4o-mini-tts",  # TODO: make all sthis configurable
-            voice="coral",
+            model=self._config.speech.model,  # TODO: make all sthis configurable
+            voice=self._config.speech.voice,
             input=text,
-            instructions=INSTRUCTIONS,
+            instructions=self._config.speech.instructions,
             response_format="pcm",
         ) as response:
             with sd.OutputStream(
@@ -213,7 +210,7 @@ class Assistant:
 
     async def _generate_response(self, conversation: Conversation) -> str:
         completion = await self._openai_client.chat.completions.create(
-            model="gpt-4o-mini",  # TODO: make this configurable
+            model=self._config.chat.model,
             messages=conversation.to_messages(),
         )
         # TODO: handle tool calls
@@ -226,7 +223,7 @@ class Assistant:
         ) as file:  # TODO: add exception handling/retries if not inbuilt
             # Assuming the async API method is called acreate:
             transcription = await self._openai_client.audio.transcriptions.create(
-                model="whisper-1",  # TODO: make this configurable
+                model=self._config.transcription.model,
                 file=file,
                 response_format="text",
             )
@@ -279,7 +276,7 @@ class Assistant:
 async def run(config: dict):
     # Define a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path("/home/msm_assistant_test/Documents/msm-assistant/temp")
+        temp_path = Path(temp_dir)
         logger.info(f"Temporary directory created: {temp_path}")
         assistant = Assistant(config, temp_path)
 

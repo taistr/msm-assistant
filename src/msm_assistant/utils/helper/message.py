@@ -84,6 +84,3 @@ if __name__ == "__main__":
 
     dev_msg = Message.create("developer", content="System update available.")
     print(dev_msg.to_dict())
-
-    assistant_msg = Message.create("assistant", audio=Audio("audio123"))
-    print(assistant_msg.to_dict())

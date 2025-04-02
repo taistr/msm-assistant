@@ -4,7 +4,7 @@ install:
 	poetry install
 
 lint:
-	poetry run flake8 .
+	poetry run ruff check --fix
 
 format:
 	poetry run black . && poetry run isort .

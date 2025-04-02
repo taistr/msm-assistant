@@ -57,7 +57,8 @@ class ChatConfig:
             )
 
         VALID_MODELS = [
-            "o3-mini" "gpt-4o",
+            "o3-mini",
+            "gpt-4o",
             "gpt-4o-mini",
             "gpt-4-turbo",
             "gpt-4",
@@ -93,6 +94,7 @@ class SpeechConfig:
         VALID_VOICES = [
             "alloy",
             "ash",
+            "ballad",
             "coral",
             "echo",
             "fable",
@@ -100,6 +102,7 @@ class SpeechConfig:
             "nova",
             "sage",
             "shimmer",
+            "verse",
         ]
 
         VALID_MODELS = [
@@ -111,6 +114,25 @@ class SpeechConfig:
 
         if config["voice"] not in VALID_VOICES:
             raise ConfigurationError(f"The speech voice must be one of {VALID_VOICES}")
+
+
+class DatabaseConfig:
+    def __init__(self, config: dict):
+        self._verify(config)
+
+        self.url: str = config["url"]
+        self.collection: str = config["collection"]
+
+    def _verify(self, config: dict):
+        if "url" not in config:
+            raise ConfigurationError(
+                "The database configuration needs to contain a 'url' field."
+            )
+
+        if "collection" not in config:
+            raise ConfigurationError(
+                "The database configuration needs to contain a 'collection' field."
+            )
 
 
 class Configuration:
@@ -130,12 +152,19 @@ class Configuration:
         )
         self.chat: ChatConfig = ChatConfig(config["chat"])
         self.speech: SpeechConfig = SpeechConfig(config["speech"])
+        self.database: DatabaseConfig = DatabaseConfig(config["database"])
+
+        self.additional: dict[str, any] = {}
+
+    def add(self, key: str, value: any):
+        """Add a new configuration key-value pair"""
+        self.additional[key] = value
 
     @staticmethod
     def _verify(config: dict[str, any]):
         """Verify the configuration file"""
 
-        REQUIRED_KEYS = ["transcription", "chat", "speech"]
+        REQUIRED_KEYS = ["transcription", "chat", "speech", "database"]
         for key in REQUIRED_KEYS:
             if key not in config:
                 raise ConfigurationError(

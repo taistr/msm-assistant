@@ -6,7 +6,7 @@ authors = [
     {name = "Tyson Truong"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "argparse (>=1.4.0,<2.0.0)",
     "pyyaml (>=6.0.2,<7.0.0)",
@@ -21,6 +21,9 @@ dependencies = [
     "python-dotenv (>=1.0.1,<2.0.0)",
     "qdrant-client (>=1.13.3,<2.0.0)",
     "evdev (>=1.9.1, <2.0.0) ; sys_platform == 'linux'",
+    "yaspin (>=3.1.0,<4.0.0)",
+    "geopy (>=2.4.1,<3.0.0)",
+    "aiohttp (>=3.11.16,<4.0.0)",
 ]
 
 
@@ -30,8 +33,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
-flake8 = "^7.1.2"
 isort = "^6.0.1"
+ruff = "^0.11.2"
 
 [tool.flake8]
 max-line-length = 88

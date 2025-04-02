@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 
+from openai.types.chat import ChatCompletionMessage
+
 
 class MessageRole(Enum):
     DEVELOPER = "developer"
     USER = "user"
     ASSISTANT = "assistant"
+    TOOL = "tool"
 
 
 class Message(ABC):
@@ -28,7 +31,6 @@ class Message(ABC):
         return cls._registry[role.value](**kwargs)
 
 
-# * User message
 class UserMessage(Message):
     role = MessageRole.USER.value
 
@@ -39,7 +41,6 @@ class UserMessage(Message):
         return {"role": self.role, "content": self.content}
 
 
-# * Developer message
 class DeveloperMessage(Message):
     role = MessageRole.DEVELOPER.value
 
@@ -50,7 +51,6 @@ class DeveloperMessage(Message):
         return {"role": self.role, "content": self.content}
 
 
-# * Assistant message
 class AssistantMessage(Message):
     role = MessageRole.ASSISTANT.value
 
@@ -61,6 +61,21 @@ class AssistantMessage(Message):
         return {"role": self.role, "content": self.content}
 
 
+class ToolMessage(Message):
+    role = MessageRole.TOOL.value
+
+    def __init__(self, tool_call_id: str, content: str):
+        self.tool_call_id = tool_call_id
+        self.content = content
+
+    def to_dict(self) -> dict:
+        return {
+            "role": self.role,
+            "tool_call_id": self.tool_call_id,
+            "content": self.content,
+        }
+
+
 class Conversation:
     def __init__(self, prompt: DeveloperMessage):
         self._state: list[Message] = []
@@ -69,11 +84,20 @@ class Conversation:
     def reset(self):
         self._state = []
 
-    def add(self, message: Message):
+    def add(self, message: Message | ChatCompletionMessage):
         self._state.append(message)
 
     def to_messages(self) -> list[dict]:
-        messages = [message.to_dict() for message in self._state]
+        messages = []
+
+        for message in self._state:
+            if isinstance(message, Message):
+                messages.append(message.to_dict())
+            elif isinstance(message, ChatCompletionMessage):
+                messages.append(message)
+            else:
+                raise ValueError(f"Unknown message type: {type(message)}")
+
         messages.insert(0, self._prompt.to_dict())
         return messages
 

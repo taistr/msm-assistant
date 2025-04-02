@@ -1,75 +1,15 @@
 import asyncio
 import logging
-import uuid
-from abc import ABC
 from enum import Enum
 from typing import Awaitable, Callable
 
-from pynput import keyboard
+from .base import Button, Controller, State
 
 logger = logging.getLogger(__name__)
-
 try:
     import evdev
 except ImportError:
     logger.warning("JoyCon control is only supported on linux")
-
-
-class ButtonState(Enum):
-    PRESSED = 1
-    RELEASED = 0
-
-
-# Controller interface
-class Controller(ABC):
-    def __init__(self):
-        self._listeners: dict[str, Callable[[any], Awaitable[None]]] = {}
-
-    async def listen(self):
-        raise NotImplementedError("listen method must be implemented in subclasses")
-
-    async def stop(self):
-        raise NotImplementedError("stop method must be implemented in subclasses")
-
-    async def add_listener(self, callback: Callable[[any], Awaitable[None]]) -> str:
-        listener_id = str(uuid.uuid4())
-        self._listeners[listener_id] = callback
-        return listener_id
-
-    async def remove_listener(self, id: str):
-        if id in self._listeners.keys():
-            self._listeners.pop(id)
-
-
-# Keyboard controller
-class Keyboard(Controller):
-    def __init__(self):
-        self._loop = asyncio.get_event_loop()
-        self._keyboard = keyboard.Listener(
-            on_press=self._on_press,
-            on_release=self._on_release,
-        )
-        self._listeners: dict[
-            keyboard.Key, Callable[[keyboard.Key, ButtonState], Awaitable[None]]
-        ] = {}
-
-    async def listen(self):
-        self._keyboard.start()
-
-    async def stop(self):
-        self._keyboard.stop()
-
-    def _on_press(self, key: keyboard.Key) -> bool:
-        for callback in self._listeners.values():
-            asyncio.run_coroutine_threadsafe(
-                callback(key, ButtonState.PRESSED), self._loop
-            )
-
-    def _on_release(self, key: keyboard.Key) -> bool:
-        for callback in self._listeners.values():
-            asyncio.run_coroutine_threadsafe(
-                callback(key, ButtonState.RELEASED), self._loop
-            )
 
 
 # Joycon controller
@@ -92,14 +32,11 @@ JOYCON_BUTTONS = [member.value for member in JoyConButton]
 class JoyCon(Controller):
     def __init__(self, max_attempts: int = 5):
         # ! will only work on Linux due to use of evdev
-        self._device_name = ["Nintendo Switch Right Joy-Con", "Joy-Con (R)"]
         self._max_attempts = max_attempts
 
         self._joy_con = None
         self._task = None
-        self._listeners: dict[
-            str, Callable[[JoyConButton, ButtonState], Awaitable[None]]
-        ] = {}
+        self._listeners: dict[str, Callable[[Button, State], Awaitable[None]]] = {}
 
     async def listen(self):
         self._task = asyncio.create_task(self._read_events())
@@ -115,13 +52,14 @@ class JoyCon(Controller):
                 self._task = None
 
     async def _connect(self) -> None:
+        DEVICE_NAME = ["Nintendo Switch Right Joy-Con", "Joy-Con (R)"]
         SLEEP_TIME = 1  # seconds
 
         attempts = 0
         while attempts < self._max_attempts:
             for path in evdev.list_devices():
                 device = evdev.InputDevice(path)
-                if device.name in self._device_name:
+                if device.name in DEVICE_NAME:
                     logger.info(f"Connected to JoyCon: {device.name} at {path}")
                     self._joy_con = device
                     return
@@ -132,6 +70,16 @@ class JoyCon(Controller):
             await asyncio.sleep(SLEEP_TIME)
 
         raise RuntimeError("Failed connec to JoyCon after several attempts")
+
+    @staticmethod
+    def _get_generic_button(key: JoyConButton) -> Button | None:
+        JOYCON_MAPPING = {
+            JoyConButton.A: Button.PRIMARY,
+            JoyConButton.B: Button.SECONDARY,
+        }
+
+        if key in JOYCON_MAPPING:
+            return JOYCON_MAPPING[key]
 
     async def _read_events(self):
         """Main async input loop. Call once to keep reading events and dispatching to listeners."""
@@ -151,15 +99,19 @@ class JoyCon(Controller):
 
             common_keycode = set(keycodes) & set(JOYCON_BUTTONS)
             if common_keycode:
-                button = JoyConButton(next(iter(common_keycode)))
-                state = ButtonState(parsed.keystate)
+                joycon_button = JoyConButton(next(iter(common_keycode)))
+                state = State(parsed.keystate)
+
+                button = self._get_generic_button(joycon_button)
+                if button is None:
+                    continue
 
                 for callback in self._listeners.values():
                     await callback(button, state)
 
 
-async def joycon_test():
-    async def joycon_listener(button: JoyConButton, state: ButtonState):
+async def main():
+    async def joycon_listener(button: Button, state: State):
         """Example listener that prints the received button and state."""
         print(f"JoyCon event: {button.name} - {state.name}")
 
@@ -188,47 +140,6 @@ async def joycon_test():
         # Ensure the JoyCon listener is stopped before exiting
         await joycon.stop()
         print("JoyCon listener stopped. Exiting")
-
-
-async def keyboard_test():
-    async def keyboard_listener(key: keyboard.Key, state: ButtonState):
-        """Example listener that prints the received key and state."""
-        key_name = key.char if hasattr(key, "char") else str(key)
-        print(f"Keyboard event: {key_name} - {state.name}")
-
-    # Create Keyboard instance
-    keyboard_controller = Keyboard()
-
-    print(
-        "Keyboard listen starting. Waiting for input events... (Press Ctrl+C to exit)"
-    )
-    try:
-        await keyboard_controller.listen()
-
-        # Register our listener callback
-        while True:
-            listener_id = await keyboard_controller.add_listener(keyboard_listener)
-            print("Added keyboard listener")
-
-            await asyncio.sleep(5)
-
-            await keyboard_controller.remove_listener(listener_id)
-            print("Removed keyboard listener")
-
-            await asyncio.sleep(5)
-
-    except KeyboardInterrupt:
-        print("Keyboard interrupt detected.")
-    finally:
-        # Ensure the Keyboard listener is stopped before exiting
-        await keyboard_controller.stop()
-        print("Keyboard listener stopped. Exiting")
-
-
-async def main():
-    # Uncomment the test you want to run
-    # await _joycon_test()
-    await keyboard_test()
 
 
 if __name__ == "__main__":

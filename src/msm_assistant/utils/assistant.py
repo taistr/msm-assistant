@@ -1,6 +1,7 @@
 import asyncio
 import enum
 import logging
+import sys
 import tempfile
 import threading
 import wave
@@ -14,7 +15,9 @@ from openai import AsyncOpenAI
 from transitions.extensions.asyncio import AsyncMachine
 
 from .helper.configuration import Configuration
-from .helper.controller import ButtonState, JoyCon, JoyConButton
+from .helper.controller.base import Button, State
+from .helper.controller.joycon import JoyCon
+from .helper.controller.keyboard import Keyboard
 from .helper.message import Conversation, Message, MessageRole
 
 logging.basicConfig(
@@ -42,7 +45,9 @@ class States(enum.Enum):
 class Assistant:
     states = [state.value for state in States]
 
-    def __init__(self, config: Configuration, directory: Path):
+    def __init__(
+        self, config: Configuration, directory: Path, controller: bool = False
+    ):
         self._config = config
         self._working_directory = directory
 
@@ -51,9 +56,13 @@ class Assistant:
             model_response=None,  # TODO: this should come from the conversation later
         )
 
-        self._controller = (
-            JoyCon()
-        )  # TODO: make this a child class of a parent "controller" class with generic listen, add_listener and remove_listener methods
+        if controller:
+            logger.info("Using JoyCon controller")
+            self._controller = JoyCon()
+        else:
+            logger.info("Using keyboard for controls")
+            self._controller = Keyboard()
+
         self._openai_client = AsyncOpenAI()
         self._conversation = Conversation(
             Message.create(MessageRole.DEVELOPER, content=self._config.chat.prompt)
@@ -114,13 +123,13 @@ class Assistant:
         # await on controller input
         event = asyncio.Event()
 
-        async def joycon_listener(button: JoyConButton, state: ButtonState):
-            if state == ButtonState.PRESSED:
-                if button == JoyConButton.A:
+        async def listener(button: Button, state: State):
+            if state == State.PRESSED:
+                if button == Button.PRIMARY:
                     event.set()
 
-        listener_id = await self._controller.add_listener(joycon_listener)
-        logger.info("Press A to start recording...")
+        listener_id = await self._controller.add_listener(listener)
+        logger.info(f"Press {Button.PRIMARY} to start recording...")
         await event.wait()
         await self._controller.remove_listener(listener_id)
 
@@ -133,16 +142,16 @@ class Assistant:
         stop_flag = threading.Event()
         to_idle = False
 
-        async def joycon_listener(button: JoyConButton, state: ButtonState):
+        async def listener(button: Button, state: State):
             nonlocal to_idle
-            if state == ButtonState.PRESSED:
-                if button == JoyConButton.A:
+            if state == State.PRESSED:
+                if button == Button.PRIMARY:
                     stop_flag.set()
-                elif button == JoyConButton.B:
+                elif button == Button.SECONDARY:
                     stop_flag.set()
                     to_idle = True
 
-        listener_id = await self._controller.add_listener(joycon_listener)
+        listener_id = await self._controller.add_listener(listener)
         self._args.user_recording_path = await asyncio.to_thread(
             self._record_audio, stop_flag
         )
@@ -173,14 +182,14 @@ class Assistant:
     async def on_enter_speaking(self):
         event = asyncio.Event()
 
-        async def joycon_listener(button: JoyConButton, state: ButtonState):
-            if state == ButtonState.PRESSED:
-                if button == JoyConButton.B:
+        async def listener(button: Button, state: State):
+            if state == State.PRESSED:
+                if button == Button.SECONDARY:
                     event.set()
 
         # stream the audio while checking for interruptions
-        logger.info("Generating speech... Press B to interrupt")
-        listener_id = await self._controller.add_listener(joycon_listener)
+        logger.info(f"Generating speech... Press {Button.SECONDARY} to interrupt")
+        listener_id = await self._controller.add_listener(listener)
         await self._generate_speech(self._args.model_response, event)
         await self._controller.remove_listener(listener_id)
 
@@ -244,7 +253,9 @@ class Assistant:
             samplerate=sample_rate, channels=channels, dtype=SAMPLE_CONFIG["type"]
         )
 
-        logger.info("Recording... Press A to stop or B to cancel.")
+        logger.info(
+            f"Recording... Press {Button.PRIMARY} to stop or {Button.SECONDARY} to cancel."
+        )
         try:
             with stream:
                 while not stop_flag.is_set():
@@ -273,12 +284,21 @@ class Assistant:
             return None
 
 
-async def run(config: dict):
+async def run(config: dict, use_controller: bool):
     # Define a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         logger.info(f"Temporary directory created: {temp_path}")
-        assistant = Assistant(config, temp_path)
+
+        if not sys.platform == "linux" and use_controller:
+            logger.warning(
+                "JoyCon support is only implemented on linux. Use keyboard for controls"
+            )
+            controller = False
+        else:
+            controller = use_controller
+
+        assistant = Assistant(config, temp_path, controller)
 
         try:
             await assistant.on_enter_initial()

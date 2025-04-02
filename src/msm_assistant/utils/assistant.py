@@ -191,7 +191,7 @@ class Assistant:
         SAMPLE_RATE = 24000  # OpenAI's TTS default rate
 
         async with self._openai_client.audio.speech.with_streaming_response.create(
-            model=self._config.speech.model,  # TODO: make all sthis configurable
+            model=self._config.speech.model,  # TODO: make all this configurable
             voice=self._config.speech.voice,
             input=text,
             instructions=self._config.speech.instructions,

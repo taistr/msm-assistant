@@ -45,7 +45,10 @@ class Controller(ABC):
 class Keyboard(Controller):
     def __init__(self):
         self._loop = asyncio.get_event_loop()
-        self._keyboard = keyboard.Listener()
+        self._keyboard = keyboard.Listener(
+            on_press=self._on_press,
+            on_release=self._on_release,
+        )
         self._listeners: dict[
             keyboard.Key, Callable[[keyboard.Key, ButtonState], Awaitable[None]]
         ] = {}
@@ -57,13 +60,19 @@ class Keyboard(Controller):
         self._keyboard.stop()
 
     def _on_press(self, key: keyboard.Key) -> bool:
-        #! consider awaiting the results
-        asyncio.run_coroutine_threadsafe(self._listeners[key], self._loop)
+        for callback in self._listeners.values():
+            asyncio.run_coroutine_threadsafe(
+                callback(key, ButtonState.PRESSED), self._loop
+            )
+
+    def _on_release(self, key: keyboard.Key) -> bool:
+        for callback in self._listeners.values():
+            asyncio.run_coroutine_threadsafe(
+                callback(key, ButtonState.RELEASED), self._loop
+            )
 
 
 # Joycon controller
-
-
 class JoyConButton(Enum):
     A = "BTN_EAST"
     B = "BTN_SOUTH"
@@ -149,12 +158,11 @@ class JoyCon(Controller):
                     await callback(button, state)
 
 
-async def _joycon_listener(button: JoyConButton, state: ButtonState):
-    """Example listener that prints the received button and state."""
-    print(f"JoyCon event: {button.name} - {state.name}")
+async def joycon_test():
+    async def joycon_listener(button: JoyConButton, state: ButtonState):
+        """Example listener that prints the received button and state."""
+        print(f"JoyCon event: {button.name} - {state.name}")
 
-
-async def _joycon_test():
     # Create JoyCon instance (this will start connecting asynchronously)
     joycon = JoyCon(max_attempts=5)
 
@@ -182,13 +190,12 @@ async def _joycon_test():
         print("JoyCon listener stopped. Exiting")
 
 
-async def _keyboard_listener(key: keyboard.Key, state: ButtonState):
-    """Example listener that prints the received key and state."""
-    key_name = key.char if hasattr(key, "char") else str(key)
-    print(f"Keyboard event: {key_name} - {state.name}")
+async def keyboard_test():
+    async def keyboard_listener(key: keyboard.Key, state: ButtonState):
+        """Example listener that prints the received key and state."""
+        key_name = key.char if hasattr(key, "char") else str(key)
+        print(f"Keyboard event: {key_name} - {state.name}")
 
-
-async def _keyboard_test():
     # Create Keyboard instance
     keyboard_controller = Keyboard()
 
@@ -221,7 +228,7 @@ async def _keyboard_test():
 async def main():
     # Uncomment the test you want to run
     # await _joycon_test()
-    await _keyboard_test()
+    await keyboard_test()
 
 
 if __name__ == "__main__":

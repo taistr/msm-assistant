@@ -15,49 +15,79 @@ class ConfigurationError(Exception):
         super().__init__(self.message)
 
 
-class Configuration:
-    def __init__(self, path: Path):
-        config = self._load(path)
+class TranscriptionConfig:
+    def __init__(self, config: dict):
+        self._verify(config)
 
-        try:
-            self._verify(config)
-        except ConfigurationError as e:
-            logger.error(e)
-            sys.exit(1)
+        self.model: str = config["model"]
 
-        self._config: dict = config
-        base: dict = config["base"]
-        self.model: str = base["model"]
-        self.voice: str = base["voice"]
-        self.prompt: str = base["prompt"]
-
-        extra: dict = config["extra"]
-        self.database: dict[str, any] | None = extra.get("database")
-
-    @staticmethod
-    def _verify(config: dict[str, any]):
-        """Verify the configuration file"""
-        if "base" not in config:
+    def _verify(self, config: dict):
+        if "model" not in config:
             raise ConfigurationError(
-                "The configuration file must contain a 'base' section"
+                "The transcription configuration needs to contain a 'model' field."
             )
 
-        if "extra" in config and not isinstance(config["extra"], dict):
+        VALID_MODELS = [
+            "whisper-1",
+            "gpt-4o-mini-transcribe",
+            "gpt-4o-transcribe",
+        ]
+        if config["model"] not in VALID_MODELS:
             raise ConfigurationError(
-                "The 'extra' field must be a dictionary with additional fields"
+                f"The transcription model must be one of {VALID_MODELS}"
             )
 
-        REQUIRED_KEYS = ["model", "voice", "prompt"]
-        for key in REQUIRED_KEYS:
-            if key not in config["base"]:
-                raise ConfigurationError(
-                    f"Missing required key '{key}' in 'base' section"
-                )
 
-        VALID_MODELS = ["gpt-4o-audio-preview", "gpt-4o-mini-audio-preview"]
-        if config["base"]["model"] not in VALID_MODELS:
+class ChatConfig:
+    def __init__(self, config: dict):
+        self._verify(config)
+
+        self.model: str = config["model"]
+        self.prompt: str = config["prompt"]
+
+    def _verify(self, config: dict):
+        if "model" not in config:
             raise ConfigurationError(
-                f"Invalid model '{config['base']['model']}. Models must be one of {VALID_MODELS}"
+                "The chat configuration needs to contain a 'model' field."
+            )
+
+        if "prompt" not in config:
+            raise ConfigurationError(
+                "The chat configuration needs to contain a 'prompt' field."
+            )
+
+        VALID_MODELS = [
+            "o3-mini" "gpt-4o",
+            "gpt-4o-mini",
+            "gpt-4-turbo",
+            "gpt-4",
+        ]
+        if config["model"] not in VALID_MODELS:
+            raise ConfigurationError(f"The chat model must be one of {VALID_MODELS}")
+
+
+class SpeechConfig:
+    def __init__(self, config: dict):
+        self._verify(config)
+
+        self.model: str = config["model"]
+        self.voice: str = config["voice"]
+        self.instructions: str = config["instructions"]
+
+    def _verify(self, config: dict):
+        if "model" not in config:
+            raise ConfigurationError(
+                "The speech configuration needs to contain a 'model' field."
+            )
+
+        if "voice" not in config:
+            raise ConfigurationError(
+                "The speech configuration needs to contain a 'voice' field."
+            )
+
+        if "instructions" not in config:
+            raise ConfigurationError(
+                "The speech configuration needs to contain a 'instructions' field."
             )
 
         VALID_VOICES = [
@@ -71,15 +101,46 @@ class Configuration:
             "sage",
             "shimmer",
         ]
-        if config["base"]["voice"] not in VALID_VOICES:
-            raise ConfigurationError(
-                f"Invalid voice '{config['base']['voice']}. Voices must be one of {VALID_VOICES}"
-            )
 
-        if config["base"]["prompt"] == "":
-            raise ConfigurationError(
-                "The 'prompt' key in the 'base' section cannot be empty"
-            )
+        VALID_MODELS = [
+            "gpt-4o-mini-tts",
+        ]
+
+        if config["model"] not in VALID_MODELS:
+            raise ConfigurationError(f"The speech model must be one of {VALID_MODELS}")
+
+        if config["voice"] not in VALID_VOICES:
+            raise ConfigurationError(f"The speech voice must be one of {VALID_VOICES}")
+
+
+class Configuration:
+    def __init__(self, path: Path):
+        config = self._load(path)
+
+        try:
+            self._verify(config)
+        except ConfigurationError as e:
+            logger.error(e)
+            sys.exit(1)
+
+        self._config: dict = config
+
+        self.transcription: TranscriptionConfig = TranscriptionConfig(
+            config["transcription"]
+        )
+        self.chat: ChatConfig = ChatConfig(config["chat"])
+        self.speech: SpeechConfig = SpeechConfig(config["speech"])
+
+    @staticmethod
+    def _verify(config: dict[str, any]):
+        """Verify the configuration file"""
+
+        REQUIRED_KEYS = ["transcription", "chat", "speech"]
+        for key in REQUIRED_KEYS:
+            if key not in config:
+                raise ConfigurationError(
+                    f"Missing required key '{key}' in the configuration file."
+                )
 
     @staticmethod
     def _load(path: Path) -> dict:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import asyncio
 import logging
 from pathlib import Path
 
@@ -20,6 +21,10 @@ def parse_arguments():
         "--config", "-c", required=True, help="Path to the configuration YAML file"
     )
 
+    parser.add_argument(
+        "--joycon", action="store_true", help="Use a JoyCon controller (default: False)"
+    )
+
     return parser.parse_args()
 
 
@@ -28,7 +33,7 @@ def main():
     args = parse_arguments()
 
     config = Configuration(Path(args.config))
-    run(config)
+    asyncio.run(run(config, args.joycon))
 
 
 if __name__ == "__main__":

@@ -51,22 +51,14 @@ class DeveloperMessage(Message):
 
 
 # * Assistant message
-class Audio:
-    def __init__(self, id: str):
-        self._id = id
-
-    def to_dict(self) -> dict:
-        return {"id": self._id}
-
-
 class AssistantMessage(Message):
     role = MessageRole.ASSISTANT.value
 
-    def __init__(self, audio: Audio):
-        self.audio = audio
+    def __init__(self, content: str):
+        self.content = content
 
     def to_dict(self) -> dict:
-        return {"role": self.role, "audio": self.audio.to_dict()}
+        return {"role": self.role, "content": self.content}
 
 
 class Conversation:
@@ -92,6 +84,3 @@ if __name__ == "__main__":
 
     dev_msg = Message.create("developer", content="System update available.")
     print(dev_msg.to_dict())
-
-    assistant_msg = Message.create("assistant", audio=Audio("audio123"))
-    print(assistant_msg.to_dict())

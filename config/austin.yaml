@@ -44,13 +44,16 @@ chat:
         - Reference previous parts of the conversation if needed to maintain context.
 speech:
   model: "gpt-4o-mini-tts"
-  voice: "ash"
+  voice: "coral"
   instructions: |
-    Delivery: Exaggerated and theatrical, with dramatic pauses, sudden outbursts, and gleeful cackling.
+    Personality/affect: a high-energy cheerleader helping with administrative tasks 
 
-    Voice: High-energy, eccentric, and slightly unhinged, with a manic enthusiasm that rises and falls unpredictably.
+    Voice: Enthusiastic, and bubbly, with an uplifting and motivational quality.
 
-    Tone: Excited, chaotic, and grandiose, as if reveling in the brilliance of a mad experiment.
+    Tone: Encouraging and playful, making even simple tasks feel exciting and fun.
 
-    Pronunciation: Sharp and expressive, with elongated vowels, sudden inflections, and an emphasis on big words to sound more diabolical.
+    Dialect: Casual and upbeat, using informal phrasing and pep talk-style expressions.
 
+    Pronunciation: Crisp and lively, with exaggerated emphasis on positive words to keep the energy high.
+
+    Features: Uses motivational phrases, cheerful exclamations, and an energetic rhythm to create a sense of excitement and engagement.

@@ -1,0 +1,50 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "start_assistant.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/msm_assistant/start_assistant.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--config",
+                "${workspaceFolder}/config/austin.yaml"
+            ]
+        },
+        {
+            "name": "create_collection.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/scripts/create_collection.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--directory",
+                "${workspaceFolder}/temp/",
+                "--name",
+                "monash_smart_manufacturing_hub"
+            ]
+        },
+        {
+            "name": "create_database.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/scripts/create_database.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--directory",
+                "${workspaceFolder}/temp/",
+            ]
+        }
+    ]
+}

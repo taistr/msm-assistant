@@ -14,7 +14,7 @@ from openai import AsyncOpenAI
 from transitions.extensions.asyncio import AsyncMachine
 
 from .helper.configuration import Configuration
-from .helper.controller import JoyCon, JoyConButton, JoyConButtonState
+from .helper.controller import ButtonState, JoyCon, JoyConButton
 from .helper.message import Conversation, Message, MessageRole
 
 logging.basicConfig(
@@ -114,8 +114,8 @@ class Assistant:
         # await on controller input
         event = asyncio.Event()
 
-        async def joycon_listener(button: JoyConButton, state: JoyConButtonState):
-            if state == JoyConButtonState.PRESSED:
+        async def joycon_listener(button: JoyConButton, state: ButtonState):
+            if state == ButtonState.PRESSED:
                 if button == JoyConButton.A:
                     event.set()
 
@@ -133,9 +133,9 @@ class Assistant:
         stop_flag = threading.Event()
         to_idle = False
 
-        async def joycon_listener(button: JoyConButton, state: JoyConButtonState):
+        async def joycon_listener(button: JoyConButton, state: ButtonState):
             nonlocal to_idle
-            if state == JoyConButtonState.PRESSED:
+            if state == ButtonState.PRESSED:
                 if button == JoyConButton.A:
                     stop_flag.set()
                 elif button == JoyConButton.B:
@@ -173,8 +173,8 @@ class Assistant:
     async def on_enter_speaking(self):
         event = asyncio.Event()
 
-        async def joycon_listener(button: JoyConButton, state: JoyConButtonState):
-            if state == JoyConButtonState.PRESSED:
+        async def joycon_listener(button: JoyConButton, state: ButtonState):
+            if state == ButtonState.PRESSED:
                 if button == JoyConButton.B:
                     event.set()
 

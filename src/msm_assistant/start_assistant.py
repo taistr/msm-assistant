@@ -30,7 +30,7 @@ def parse_arguments():
 
     parser.add_argument(
         "--use-database",
-        action="store_false",
+        action="store_true",
         help="Use a database for RAG (default: False)",
     )
 

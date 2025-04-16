@@ -1,7 +1,7 @@
 import asyncio
 import enum
+import json
 import logging
-import sys
 import tempfile
 import threading
 import wave
@@ -19,6 +19,9 @@ from .helper.controller.base import Button, State
 from .helper.controller.joycon import JoyCon
 from .helper.controller.keyboard import Keyboard
 from .helper.message import Conversation, Message, MessageRole
+from .helper.tools.base import Tool
+from .helper.tools.knowledge_base import KnowledgeBase
+from .helper.tools.weather import Weather
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -45,9 +48,7 @@ class States(enum.Enum):
 class Assistant:
     states = [state.value for state in States]
 
-    def __init__(
-        self, config: Configuration, directory: Path, controller: bool = False
-    ):
+    def __init__(self, config: Configuration, directory: Path):
         self._config = config
         self._working_directory = directory
 
@@ -56,7 +57,7 @@ class Assistant:
             model_response=None,  # TODO: this should come from the conversation later
         )
 
-        if controller:
+        if self._config.additional.get("use_joycon"):
             logger.info("Using JoyCon controller")
             self._controller = JoyCon()
         else:
@@ -67,6 +68,15 @@ class Assistant:
         self._conversation = Conversation(
             Message.create(MessageRole.DEVELOPER, content=self._config.chat.prompt)
         )
+
+        self._tools: dict[str, Tool] = {
+            Weather.name(): Weather(),
+        }
+        if self._config.additional.get("use_database"):
+            self._tools[KnowledgeBase.name()] = KnowledgeBase(
+                url=self._config.database.url,
+                collection=self._config.database.collection,
+            )
 
         self._machine = AsyncMachine(
             model=self,
@@ -115,6 +125,11 @@ class Assistant:
         # initialise the controller listen
         await self._controller.listen()
         logger.info("Started controller listener")
+
+        # initialise the tools
+        for tool in self._tools.values():
+            await tool.init()
+            logger.info(f"Tool {tool.name()} initialized")
 
         # transition to idle
         await self.start_idle()
@@ -170,11 +185,12 @@ class Assistant:
         self._conversation.add(Message.create(MessageRole.USER, content=user_text))
 
         # generate response
-        self._args.model_response = await self._generate_response(self._conversation)
+        messages = await self._generate_response(self._conversation)
+        for message in messages:
+            self._conversation.add(message)
+
+        self._args.model_response = messages[-1].content
         logger.info(f"Assistant: {self._args.model_response}")
-        self._conversation.add(
-            Message.create(MessageRole.ASSISTANT, content=self._args.model_response)
-        )
 
         # transition to speech (only if the last 4 operations were successful)
         await self.start_speaking()
@@ -217,14 +233,62 @@ class Assistant:
                     audio_array = np.frombuffer(chunk, dtype=np.int16)
                     stream.write(audio_array)
 
-    async def _generate_response(self, conversation: Conversation) -> str:
+    async def _generate_response(
+        self, conversation: Conversation
+    ) -> list[Message]:  #! return all messages in the conversation
+        tools = [tool.get_definition() for tool in self._tools.values()]
         completion = await self._openai_client.chat.completions.create(
             model=self._config.chat.model,
             messages=conversation.to_messages(),
+            tools=tools,
         )
-        # TODO: handle tool calls
 
-        return completion.choices[0].message.content
+        # handle tool calls
+        messages = []
+        if completion.choices[0].finish_reason == "tool_calls":
+            messages.append(
+                completion.choices[0].message
+            )  # append model's function call message
+
+            # execute the tool calls
+            tool_calls = completion.choices[0].message.tool_calls
+            for tool_call in tool_calls:
+                args = json.loads(tool_call.function.arguments)
+                result = await self._tools[tool_call.function.name].execute(args)
+                messages.append(
+                    Message.create(
+                        MessageRole.TOOL,
+                        tool_call_id=tool_call.id,
+                        content=str(result),
+                    )
+                )
+
+            # generate another response
+            completion_alt = await self._openai_client.chat.completions.create(
+                model=self._config.chat.model,
+                messages=conversation.to_messages()
+                + [message.to_dict() for message in messages],
+            )  #! this needs to be more robust later
+            content = completion_alt.choices[0].message.content
+            messages.append(
+                Message.create(
+                    MessageRole.ASSISTANT,
+                    content=content,
+                )
+            )
+        elif completion.choices[0].finish_reason == "stop":
+            messages.append(
+                Message.create(
+                    MessageRole.ASSISTANT,
+                    content=completion.choices[0].message.content,
+                )
+            )
+        else:
+            raise ValueError(
+                f"Encountered unhandled finish reason: {completion.choices[0].finish_reason}"
+            )
+
+        return messages
 
     async def _transcribe_audio(self, file_path: Path) -> str:
         with open(
@@ -284,21 +348,13 @@ class Assistant:
             return None
 
 
-async def run(config: dict, use_controller: bool):
+async def run(config: Configuration):
     # Define a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         logger.info(f"Temporary directory created: {temp_path}")
 
-        if not sys.platform == "linux" and use_controller:
-            logger.warning(
-                "JoyCon support is only implemented on linux. Use keyboard for controls"
-            )
-            controller = False
-        else:
-            controller = use_controller
-
-        assistant = Assistant(config, temp_path, controller)
+        assistant = Assistant(config, temp_path)
 
         try:
             await assistant.on_enter_initial()

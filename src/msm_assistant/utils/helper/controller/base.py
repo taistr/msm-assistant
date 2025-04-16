@@ -1,6 +1,6 @@
 import logging
 import uuid
-from abc import ABC
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Awaitable, Callable
 
@@ -22,9 +22,11 @@ class Controller(ABC):
     def __init__(self):
         self._listeners: dict[str, Callable[[Button, State], Awaitable[None]]] = {}
 
+    @abstractmethod
     async def listen(self):
         raise NotImplementedError("listen method must be implemented in subclasses")
 
+    @abstractmethod
     async def stop(self):
         raise NotImplementedError("stop method must be implemented in subclasses")
 

@@ -2,6 +2,7 @@
 import argparse
 import asyncio
 import logging
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -22,7 +23,15 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--joycon", action="store_true", help="Use a JoyCon controller (default: False)"
+        "--use-joycon",
+        action="store_true",
+        help="Use a JoyCon controller (default: False)",
+    )
+
+    parser.add_argument(
+        "--use-database",
+        action="store_true",
+        help="Use a database for RAG (default: False)",
     )
 
     return parser.parse_args()
@@ -33,7 +42,19 @@ def main():
     args = parse_arguments()
 
     config = Configuration(Path(args.config))
-    asyncio.run(run(config, args.joycon))
+
+    if not sys.platform == "linux" and args.use_joycon:
+        logger.warning(
+            "JoyCon support is only implemented on linux. Use keyboard for controls"
+        )
+        use_joycon = False
+    else:
+        use_joycon = args.use_joycon
+
+    config.add("use_joycon", use_joycon)
+    config.add("use_database", args.use_database)
+
+    asyncio.run(run(config))
 
 
 if __name__ == "__main__":

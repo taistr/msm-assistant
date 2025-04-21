@@ -11,6 +11,7 @@ from typing import Optional
 
 import numpy as np
 import sounddevice as sd
+from asyncua import Client, ua
 from openai import AsyncOpenAI
 from transitions.extensions.asyncio import AsyncMachine
 
@@ -57,25 +58,28 @@ class Assistant:
             model_response=None,  # TODO: this should come from the conversation later
         )
 
-        if self._config.additional.get("use_joycon"):
-            logger.info("Using JoyCon controller")
-            self._controller = JoyCon()
-        else:
-            logger.info("Using keyboard for controls")
-            self._controller = Keyboard()
+        self._controller = (
+            Keyboard() if self._config.additional.get("use_keyboard") else JoyCon()
+        )
+        logger.info(f"Using {self._controller.__class__.__name__} controller")
 
         self._openai_client = AsyncOpenAI()
         self._conversation = Conversation(
             Message.create(MessageRole.DEVELOPER, content=self._config.chat.prompt)
         )
+        self._opcua_client = Client(
+            url=self._config.opcua.url
+        )  # TODO: make the use of this configurable
 
         self._tools: dict[str, Tool] = {
             Weather.name(): Weather(),
         }
         if self._config.additional.get("use_database"):
-            self._tools[KnowledgeBase.name()] = KnowledgeBase(
-                url=self._config.database.url,
-                collection=self._config.database.collection,
+            self._tools[KnowledgeBase.name()] = (
+                KnowledgeBase(  # TODO: make the name of the knowledge base function call more domain specific
+                    url=self._config.database.url,
+                    collection=self._config.database.collection,
+                )
             )
 
         self._machine = AsyncMachine(
@@ -131,26 +135,48 @@ class Assistant:
             await tool.init()
             logger.info(f"Tool {tool.name()} initialized")
 
+        # initialise the opcua client
+        await self._opcua_client.connect()
+        asyncio.create_task(self._update_state())
+        logger.info("Connected to OPCUA server")
+
         # transition to idle
         await self.start_idle()
+
+    async def on_enter_reset(self):
+        logger.info("Resetting conversation...")
+        self._conversation.reset()
+        self._args.user_recording_path = None
+        self._args.model_response = None
+
+        self.start_idle()
 
     async def on_enter_idle(self):
         # await on controller input
         event = asyncio.Event()
+        to_reset = False
 
         async def listener(button: Button, state: State):
+            nonlocal to_reset
             if state == State.PRESSED:
                 if button == Button.PRIMARY:
                     event.set()
+                if button == Button.SECONDARY:
+                    to_reset = True
+                    event.set()
 
         listener_id = await self._controller.add_listener(listener)
-        logger.info(f"Press {Button.PRIMARY} to start recording...")
+        logger.info(
+            f"Press {Button.PRIMARY} to start recording or {Button.SECONDARY} to reset..."
+        )
         await event.wait()
         await self._controller.remove_listener(listener_id)
 
-        # TODO: add transition to reset
         # transition to either start recording or reset conversation
-        await self.start_listening()
+        if to_reset:
+            await self.start_reset()
+        else:
+            await self.start_listening()
 
     async def on_enter_listening(self):
         # wait for a button press
@@ -212,11 +238,33 @@ class Assistant:
         # transition to idle (either through interruption or finishing)
         await self.start_idle()
 
+    async def _update_state(self):
+        POLLING_PERIOD = 0.2  # seconds
+        state_node = self._opcua_client.get_node(self._config.opcua.state_node_id)
+        conversation_node = self._opcua_client.get_node(
+            self._config.opcua.conversation_node_id
+        )
+
+        while True:
+            await state_node.write_value(
+                ua.Variant(
+                    self.state,
+                    ua.VariantType.String,
+                )
+            )
+            await conversation_node.write_value(
+                ua.Variant(
+                    json.dumps(self._conversation.to_messages()),
+                    ua.VariantType.String,
+                )
+            )
+            await asyncio.sleep(POLLING_PERIOD)
+
     async def _generate_speech(self, text: str, stop_flag: asyncio.Event):
         SAMPLE_RATE = 24000  # OpenAI's TTS default rate
 
         async with self._openai_client.audio.speech.with_streaming_response.create(
-            model=self._config.speech.model,  # TODO: make all this configurable
+            model=self._config.speech.model,
             voice=self._config.speech.voice,
             input=text,
             instructions=self._config.speech.instructions,

@@ -135,6 +135,29 @@ class DatabaseConfig:
             )
 
 
+class OPCUAConfig:
+    def __init__(self, config: dict):
+        self._verify(config)
+
+        self.url: str = config["url"]
+        self.connection_node_id: str = config["connection_node_id"]
+        self.state_node_id: str = config["state_node_id"]
+        self.conversation_node_id: str = config["conversation_node_id"]
+
+    def _verify(self, config: dict):
+        REQUIRED_KEYS = [
+            "url",
+            "connection_node_id",
+            "conversation_node_id",
+            "state_node_id",
+        ]
+        for key in REQUIRED_KEYS:
+            if key not in config:
+                raise ConfigurationError(
+                    f"Missing required key '{key}' in the OPCUA configuration."
+                )
+
+
 class Configuration:
     def __init__(self, path: Path):
         config = self._load(path)
@@ -153,6 +176,7 @@ class Configuration:
         self.chat: ChatConfig = ChatConfig(config["chat"])
         self.speech: SpeechConfig = SpeechConfig(config["speech"])
         self.database: DatabaseConfig = DatabaseConfig(config["database"])
+        self.opcua: OPCUAConfig = OPCUAConfig(config["opcua"])
 
         self.additional: dict[str, any] = {}
 
@@ -164,7 +188,7 @@ class Configuration:
     def _verify(config: dict[str, any]):
         """Verify the configuration file"""
 
-        REQUIRED_KEYS = ["transcription", "chat", "speech", "database"]
+        REQUIRED_KEYS = ["transcription", "chat", "speech", "database", "opcua"]
         for key in REQUIRED_KEYS:
             if key not in config:
                 raise ConfigurationError(

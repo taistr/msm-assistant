@@ -61,3 +61,8 @@ speech:
 database:
   url: "http://msmassistant.local:6333"
   collection: "monash_smart_manufacturing_hub"
+opcua: 
+  url: "opc.tcp://localhost:4840"
+  connection_node_id: "ns=32;s=A1d_Connected;"
+  state_node_id: "ns=32;s=A1d_State;"
+  conversation_node_id: "ns=32;s=A1d_Conversation;"

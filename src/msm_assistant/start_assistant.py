@@ -23,15 +23,21 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--use-joycon",
+        "--joycon",
         action="store_true",
         help="Use a JoyCon controller (default: False)",
     )
 
     parser.add_argument(
-        "--use-database",
+        "--database",
         action="store_true",
         help="Use a database for RAG (default: False)",
+    )
+
+    parser.add_argument(
+        "--opcua",
+        action="store_true",
+        help="Use OPCUA for RAG and state (default: False)",
     )
 
     return parser.parse_args()
@@ -43,16 +49,17 @@ def main():
 
     config = Configuration(Path(args.config))
 
-    if not sys.platform == "linux" and args.use_joycon:
+    if not sys.platform == "linux" and args.joycon:
         logger.warning(
             "JoyCon support is only implemented on linux. Use keyboard for controls"
         )
         use_joycon = False
     else:
-        use_joycon = args.use_joycon
+        use_joycon = args.joycon
 
     config.add("use_joycon", use_joycon)
-    config.add("use_database", args.use_database)
+    config.add("use_database", args.database)
+    config.add("use_opcua", args.opcua)
 
     asyncio.run(run(config))
 

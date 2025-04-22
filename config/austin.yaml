@@ -63,6 +63,17 @@ database:
   collection: "monash_smart_manufacturing_hub"
 opcua: 
   url: "opc.tcp://localhost:4840"
-  connection_node_id: "ns=32;s=A1d_Connected;"
   state_node_id: "ns=32;s=A1d_State;"
   conversation_node_id: "ns=32;s=A1d_Conversation;"
+  categories: [
+    {
+      "category_name": "camera_status",
+      "description": "Get information about the current state of the cameras in the MSM lab.",
+      "nodes": [
+        {
+        "node_id": "ns=31;s=C1f_Ready;",
+        "alias": "Camera 1 - Ready State"
+        }
+      ]
+    },
+  ]

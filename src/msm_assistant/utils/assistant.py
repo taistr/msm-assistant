@@ -22,6 +22,7 @@ from .helper.controller.keyboard import Keyboard
 from .helper.message import Conversation, Message, MessageRole
 from .helper.tools.base import Tool
 from .helper.tools.knowledge_base import KnowledgeBase
+from .helper.tools.opcua_read import OPCUARead
 from .helper.tools.weather import Weather
 
 logging.basicConfig(
@@ -67,9 +68,11 @@ class Assistant:
         self._conversation = Conversation(
             Message.create(MessageRole.DEVELOPER, content=self._config.chat.prompt)
         )
-        self._opcua_client = Client(
-            url=self._config.opcua.url
-        )  # TODO: make the use of this configurable
+        self._opcua_client = (
+            Client(url=self._config.opcua.url)
+            if self._config.additional.get("use_opcua")
+            else None
+        )
 
         self._tools: dict[str, Tool] = {
             Weather.name(): Weather(),
@@ -80,6 +83,10 @@ class Assistant:
                     url=self._config.database.url,
                     collection=self._config.database.collection,
                 )
+            )
+        if self._config.additional.get("use_opcua"):
+            self._tools[OPCUARead.name()] = OPCUARead(
+                url=self._config.opcua.url, categories=self._config.opcua.categories
             )
 
         self._machine = AsyncMachine(
@@ -136,9 +143,10 @@ class Assistant:
             logger.info(f"Tool {tool.name()} initialized")
 
         # initialise the opcua client
-        await self._opcua_client.connect()
-        asyncio.create_task(self._update_state())
-        logger.info("Connected to OPCUA server")
+        if self._opcua_client is not None:
+            await self._opcua_client.connect()
+            asyncio.create_task(self._update_state())
+            logger.info("Connected to OPCUA server")
 
         # transition to idle
         await self.start_idle()

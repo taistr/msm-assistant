@@ -18,7 +18,7 @@ class OPCUARead(Tool):
         """Get the name of the tool."""
         return "get_opcua_nodes"
 
-    async def init():
+    async def init(self):
         """Initialize the tool."""
         pass
 
@@ -26,9 +26,9 @@ class OPCUARead(Tool):
         """Execute the tool with the given arguments."""
 
         # TODO : check if the category is valid
-        category: CategoryConfig = self._configs(arguments["category"])
+        category: CategoryConfig = self._configs[arguments["category"]]
 
-        with Client(url=self._url) as client:
+        async with Client(url=self._url) as client:
             client: Client
             # get nodes from the server
             nodes: list[Node] = []
@@ -38,13 +38,13 @@ class OPCUARead(Tool):
                 )  # TODO: make this a class once it's finalised
 
             tasks = [node.read_value() for node in nodes]
-            results = await asyncio.gather(tasks)  # TODO: deal with exception
+            results = await asyncio.gather(*tasks)  # TODO: deal with exception
 
             # augment with alias and nodeid
             augmented = []
             for result, node_descriptor in zip(results, category.nodes):
                 augmented.append(
-                    {  # TODO: add an extra description to help explain the value?
+                    {  # TODO: add an extra field for the data type later
                         "node_id": node_descriptor["node_id"],
                         "alias": node_descriptor["alias"],
                         "current_value": result,

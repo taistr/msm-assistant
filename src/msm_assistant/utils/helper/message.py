@@ -85,16 +85,33 @@ class Conversation:
         self._state = []
 
     def add(self, message: Message | ChatCompletionMessage):
+        #! ChatCompletionMessages that contain tool calls need to be preserved as they are in the conversation history
+        if isinstance(message, ChatCompletionMessage) and message.tool_calls is None:
+            raise ValueError(
+                "ChatCompletionMessage instances should only be added for tool calls"
+            )
+
         self._state.append(message)
 
-    def to_messages(self) -> list[dict]:
+    def to_messages(self, to_dict: bool = False) -> list[dict]:
         messages = []
 
         for message in self._state:
             if isinstance(message, Message):
                 messages.append(message.to_dict())
-            elif isinstance(message, ChatCompletionMessage):
-                messages.append(message)
+            elif isinstance(
+                message, ChatCompletionMessage
+            ):  #! specifically in the case of a tool call
+                message: ChatCompletionMessage
+                if to_dict:
+                    tool_call_message = {
+                        "id": message.tool_calls[0].id,
+                        "function_name": message.tool_calls[0].function.name,
+                        "arguments": message.tool_calls[0].function.name,
+                    }
+                    messages.append(tool_call_message)
+                else:
+                    messages.append(message)
             else:
                 raise ValueError(f"Unknown message type: {type(message)}")
 

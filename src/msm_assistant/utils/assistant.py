@@ -59,8 +59,9 @@ class Assistant:
             model_response=None,  # TODO: this should come from the conversation later
         )
 
+        # TODO: add an option for keyboard text inputs
         self._controller = (
-            Keyboard() if self._config.additional.get("use_keyboard") else JoyCon()
+            JoyCon() if self._config.additional.get("use_joycon") else Keyboard()
         )
         logger.info(f"Using {self._controller.__class__.__name__} controller")
 
@@ -70,21 +71,22 @@ class Assistant:
         )
         self._opcua_client = (
             Client(url=self._config.opcua.url)
-            if self._config.additional.get("use_opcua")
+            if self._config.additional.get("use_opcua_rag")
             else None
         )
 
         self._tools: dict[str, Tool] = {
             Weather.name(): Weather(),
         }
-        if self._config.additional.get("use_database"):
-            self._tools[KnowledgeBase.name()] = (
-                KnowledgeBase(  # TODO: make the name of the knowledge base function call more domain specific
-                    url=self._config.database.url,
-                    collection=self._config.database.collection,
-                )
+        if self._config.additional.get("use_database_rag"):
+            self._tools[KnowledgeBase.name()] = KnowledgeBase(
+                url=self._config.database.url,
+                collection=self._config.database.collection,
             )
-        if self._config.additional.get("use_opcua"):
+
+        self._opcua_client = None
+        if self._config.additional.get("use_opcua_rag"):
+            self._opcua_client = Client(url=self._config.opcua.url)
             self._tools[OPCUARead.name()] = OPCUARead(
                 url=self._config.opcua.url, categories=self._config.opcua.categories
             )
@@ -262,7 +264,7 @@ class Assistant:
             )
             await conversation_node.write_value(
                 ua.Variant(
-                    json.dumps(self._conversation.to_messages()),
+                    json.dumps(self._conversation.to_messages(to_dict=True)),
                     ua.VariantType.String,
                 )
             )
@@ -320,6 +322,7 @@ class Assistant:
                 )
 
             # generate another response
+            # TODO: there is currently an assumption there is no additional subsequent tool calls
             completion_alt = await self._openai_client.chat.completions.create(
                 model=self._config.chat.model,
                 messages=conversation.to_messages()

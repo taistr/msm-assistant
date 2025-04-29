@@ -140,16 +140,13 @@ class CategoryConfig:
     def __init__(self, config: dict):
         self._verify(config)
 
-        self.category_name: str = config["tool_name"]
+        self.category_name: str = config["category_name"]
         self.description: str = config["description"]
         self.nodes: List[str] = config["nodes"]
 
-    def all_dicts_have_keys(dict_list, required_keys):
-        return all(all(key in d for key in required_keys) for d in dict_list)
-
     def _verify(self, config: dict):
         REQUIRED_KEYS = [
-            "tool_name",
+            "category_name",
             "description",
             "nodes",
         ]
@@ -173,6 +170,10 @@ class CategoryConfig:
                 "Each node in the OPCUARead configuration needs to contain 'node_id' and 'alias' fields."
             )
 
+    @staticmethod
+    def all_dicts_have_keys(dict_list, required_keys):
+        return all(all(key in d for key in required_keys) for d in dict_list)
+
 
 class OPCUAConfig:
     def __init__(self, config: dict):
@@ -181,7 +182,10 @@ class OPCUAConfig:
         self.url: str = config["url"]
         self.state_node_id: str = config["state_node_id"]
         self.conversation_node_id: str = config["conversation_node_id"]
-        self.categories: List[CategoryConfig] = config.get("categories", [])
+        self.categories: List[CategoryConfig] = [
+            CategoryConfig(category_dict)
+            for category_dict in config.get("categories", [])
+        ]
 
     def _verify(self, config: dict):
         REQUIRED_KEYS = [

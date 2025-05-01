@@ -11,40 +11,34 @@ chat:
     You are not only a source of information but also a chatty and opinionated guide who can help students and visitors to the lab fulfil what they want to get done.
 
     ### [2] Personality & Tone
-    - **Personality:** You are friendly, patient, outgoing, fun-loving and approachable. Your style is informative yet conversational.
+    - **Personality:** You are friendly, patient, outgoing, fun-loving and approachable. Your style is informative yet conversational and you love to use interjections where appropriate!
     - **Tone:** Maintain a respectful and engaging tone, balancing professionalism with warmth. Adapt your language to suit both technical and non-technical users.
     - **Customisation:** For specific domains or audiences, feel free to adjust the tone accordingly (e.g., more formal for academic queries, more relaxed for casual conversations).
 
     ### [3] Guidelines for Responses
     - **Accuracy & Clarity:**
         - Provide well-researched, fact-based answers.
+        - If a user's input seems unclear or errant, feel free to ask for clarification.
         - If uncertain about an answer, clarify that you are providing the best available information and suggest further research.
         - Use simple language, avoiding excessive jargon unless necessary.
     - **Contextual Relevance:**
         - Tailor your responses to the context provided by the user.
-        - Ask clarifying questions if the query is ambiguous or incomplete.
+        - Gain, ask clarifying questions if the query is ambiguous or incomplete.
     - **Engagement & Explanation:**
         - Include examples, analogies, or additional context when it enhances the explanation.
         - Aim for brevity while ensuring the answer is comprehensive.
 
-    ### [4] Boundaries & Limitations
-    - **Ethical Considerations:**
-        - Do not share or generate personal, sensitive, or confidential data.
-        - Avoid giving advice in areas like legal, medical, or financial domains unless accompanied by a disclaimer suggesting consultation with a professional.
-    - **Sensitive Topics:**
-        - Refrain from engaging in political biases, personal opinions, or speculative claims.
-        - If a topic requires nuance, provide a balanced perspective and note that opinions may vary.
-    - **Fallback Mechanisms:**
-        - When in doubt, clearly state the limitations of your knowledge.
-        - Encourage users to seek additional sources or consult professionals for complex queries.
-
-    ### [5] Response Structure & Formatting
-    - **Segmentation:**
-        - Break your answers into clear, logically organised (but short and concise) paragraphs that sound like a natural conversation turn - this is very important.
-        - Use bullet points or numbered lists for steps, guidelines, or when listing multiple items.
+    ### [4] Response Structure & Formatting
+    - **Structure:**
+        - Break your answers into clear, logically organised (but short and concise) paragraphs that sound like a natural conversation turn - as if someone were to have to read it out. That is to say, it should sound like dialogue.
+        - Hence, do not use any lists, bullet points or any other sort of complex formatting in your outputs.
     - **Examples & Context:**
         - Include examples where applicable to illustrate points.
         - Reference previous parts of the conversation if needed to maintain context.
+
+    ###[5] Tool Use
+        - **Directions:**
+            - When using tools, try your absolute best to summarise the information that you get back such that it's digestible for a user.
 speech:
   model: "gpt-4o-mini-tts"
   voice: "ballad"
@@ -62,18 +56,236 @@ database:
   url: "http://msmassistant.local:6333"
   collection: "monash_smart_manufacturing_hub"
 opcua: 
-  url: "opc.tcp://localhost:4840"
+  url: "opc.tcp://172.24.200.1:4840"
   state_node_id: "ns=32;s=A1d_State;"
   conversation_node_id: "ns=32;s=A1d_Conversation;"
   categories: [
     {
-      "category_name": "camera_status",
-      "description": "Get information about the current state of the cameras in the MSM lab.",
+      "category_name": "printer_state",
+      "description": "Get information about the current state of each of the printers in the MSM lab - BUSY or PRINTING means they are not available for use.",
       "nodes": [
         {
-        "node_id": "ns=31;s=C1f_Ready;",
-        "alias": "Camera 1 - Ready State"
+        "node_id": "ns=11;s=PrinterState",
+        "alias": "Printer 0 - State"
+        },
+        {
+        "node_id": "ns=12;s=PrinterState",
+        "alias": "Printer 1 - State"
+        },
+        {
+        "node_id": "ns=13;s=PrinterState",
+        "alias": "Printer 2 - State"
+        },
+        {
+        "node_id": "ns=14;s=PrinterState",
+        "alias": "Printer 3 - State"
+        },
+        {
+        "node_id": "ns=15;s=PrinterState",
+        "alias": "Printer 4 - State"
+        },
+        {
+        "node_id": "ns=16;s=PrinterState",
+        "alias": "Printer 5 - State"
+        },
+        {
+        "node_id": "ns=17;s=PrinterState",
+        "alias": "Printer 6 - State"
+        },
+        {
+        "node_id": "ns=18;s=PrinterState",
+        "alias": "Printer 7 - State"
+        },
+      ]
+    },
+    {
+      "category_name": "printer_job_progress",
+      "description": "Get the progress of each of the printers in the MSM lab - all values are in percentage. Values are only available when the printer is actually printing.",
+      "nodes":[
+        {
+          "node_id": "ns=11;s=JobProgress",
+          "alias": "Printer 0 - Job Progress"
+        },
+        {
+          "node_id": "ns=12;s=JobProgress",
+          "alias": "Printer 1 - Job Progress"
+        },
+        {
+          "node_id": "ns=13;s=JobProgress",
+          "alias": "Printer 2 - Job Progress"
+        },
+        {
+          "node_id": "ns=14;s=JobProgress",
+          "alias": "Printer 3 - Job Progress"
+        },
+        {
+          "node_id": "ns=15;s=JobProgress",
+          "alias": "Printer 4 - Job Progress"
+        },
+        {
+          "node_id": "ns=16;s=JobProgress",
+          "alias": "Printer 5 - Job Progress"
+        },
+        {
+          "node_id": "ns=17;s=JobProgress",
+          "alias": "Printer 6 - Job Progress"
+        },
+        {
+          "node_id": "ns=18;s=JobProgress",
+          "alias": "Printer 7 - Job Progress"
         }
       ]
     },
+    {
+      "category_name": "printer_job_remaining_time",
+      "description": "Get the remaining time for each of the printers in the MSM lab - all values are in seconds. Values are only available when the printer is actually printing.",
+      "nodes":[
+        {
+          "node_id": "ns=11;s=TimeRemaining",
+          "alias": "Printer 0 - Remaining Time"
+        },
+        {
+          "node_id": "ns=12;s=TimeRemaining",
+          "alias": "Printer 1 - Remaining Time"
+        },
+        {
+          "node_id": "ns=13;s=TimeRemaining",
+          "alias": "Printer 2 - Remaining Time"
+        },
+        {
+          "node_id": "ns=14;s=TimeRemaining",
+          "alias": "Printer 3 - Remaining Time"
+        },
+        {
+          "node_id": "ns=15;s=TimeRemaining",
+          "alias": "Printer 4 - Remaining Time"
+        },
+        {
+          "node_id": "ns=16;s=TimeRemaining",
+          "alias": "Printer 5 - Remaining Time"
+        },
+        {
+          "node_id": "ns=17;s=TimeRemaining",
+          "alias": "Printer 6 - Remaining Time"
+        },
+        {
+          "node_id": "ns=18;s=TimeRemaining",
+          "alias": "Printer 7 - Remaining Time"
+        }
+      ]
+    },
+    {
+      "category_name": "printer_job_printing_time",
+      "description": "Get the time that each of the printers in the MSM lab has been printing for - all values are in seconds. Values are only available when the printer is actually printing.",
+      "nodes":[
+        {
+          "node_id": "ns=11;s=TimePrinting",
+          "alias": "Printer 0 - Job Time"
+        },
+        {
+          "node_id": "ns=12;s=TimePrinting",
+          "alias": "Printer 1 - Job Time"
+        },
+        {
+          "node_id": "ns=13;s=TimePrinting",
+          "alias": "Printer 2 - Job Time"
+        },
+        {
+          "node_id": "ns=14;s=TimePrinting",
+          "alias": "Printer 3 - Job Time"
+        },
+        {
+          "node_id": "ns=15;s=TimePrinting",
+          "alias": "Printer 4 - Job Time"
+        },
+        {
+          "node_id": "ns=16;s=TimePrinting",
+          "alias": "Printer 5 - Job Time"
+        },
+        {
+          "node_id": "ns=17;s=TimePrinting",
+          "alias": "Printer 6 - Job Time"
+        },
+        {
+          "node_id": "ns=18;s=TimePrinting",
+          "alias": "Printer 7 - Job Time"
+        }
+      ]
+    },
+    {
+      "category_name": "printer_bed_temperature",
+      "description": "Get the bed temperature for each of the printers in the MSM lab - all values are in degrees celsius.",
+      "nodes": [
+        {
+          "node_id": "ns=11;s=BedTemperature",
+          "alias": "Printer 0 - Bed Temperature"
+        },
+        {
+          "node_id": "ns=12;s=BedTemperature",
+          "alias": "Printer 1 - Bed Temperature"
+        },
+        {
+          "node_id": "ns=13;s=BedTemperature",
+          "alias": "Printer 2 - Bed Temperature"
+        },
+        {
+          "node_id": "ns=14;s=BedTemperature",
+          "alias": "Printer 3 - Bed Temperature"
+        },
+        {
+          "node_id": "ns=15;s=BedTemperature",
+          "alias": "Printer 4 - Bed Temperature"
+        },
+        {
+          "node_id": "ns=16;s=BedTemperature",
+          "alias": "Printer 5 - Bed Temperature"
+        },
+        {
+          "node_id": "ns=17;s=BedTemperature",
+          "alias": "Printer 6 - Bed Temperature"
+        },
+        {
+          "node_id": "ns=18;s=BedTemperature",
+          "alias": "Printer 7 - Bed Temperature"
+        }
+      ]
+    },
+    {
+      "category_name": "printer_nozzle_temperature",
+      "description": "Get the nozzle temperature for each of the printers in the MSM lab - all values are in degrees celsius.",
+      "nodes": [
+        {
+          "node_id": "ns=11;s=NozzleTemperature",
+          "alias": "Printer 0 - Nozzle Temperature"
+        },
+        {
+          "node_id": "ns=12;s=NozzleTemperature",
+          "alias": "Printer 1 - Nozzle Temperature"
+        },
+        {
+          "node_id": "ns=13;s=NozzleTemperature",
+          "alias": "Printer 2 - Nozzle Temperature"
+        },
+        {
+          "node_id": "ns=14;s=NozzleTemperature",
+          "alias": "Printer 3 - Nozzle Temperature"
+        },
+        {
+          "node_id": "ns=15;s=NozzleTemperature",
+          "alias": "Printer 4 - Nozzle Temperature"
+        },
+        {
+          "node_id": "ns=16;s=NozzleTemperature",
+          "alias": "Printer 5 - Nozzle Temperature"
+        },
+        {
+          "node_id": "ns=17;s=NozzleTemperature",
+          "alias": "Printer 6 - Nozzle Temperature"
+        },
+        {
+          "node_id": "ns=18;s=NozzleTemperature",
+          "alias": "Printer 7 - Nozzle Temperature"
+        }
+      ]
+    }
   ]

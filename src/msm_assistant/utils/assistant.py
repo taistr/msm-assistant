@@ -121,6 +121,7 @@ class Assistant:
                 States.INITIAL.value,
                 States.SPEAKING.value,
                 States.LISTENING.value,
+                States.RESET.value,
             ],
             dest=States.IDLE.value,
             trigger="start_idle",
@@ -145,7 +146,7 @@ class Assistant:
             logger.info(f"Tool {tool.name()} initialized")
 
         # initialise the opcua client
-        if self._opcua_client is not None:
+        if self._config.additional.get("share_state"):
             await self._opcua_client.connect()
             asyncio.create_task(self._update_state())
             logger.info("Connected to OPCUA server")
@@ -159,7 +160,7 @@ class Assistant:
         self._args.user_recording_path = None
         self._args.model_response = None
 
-        self.start_idle()
+        await self.start_idle()
 
     async def on_enter_idle(self):
         # await on controller input

@@ -348,12 +348,11 @@ class Assistant:
                 )
 
             # generate another response
-            # TODO: there is currently an assumption there is no additional subsequent tool calls
             completion_alt = await self._openai_client.chat.completions.create(
                 model=self._config.chat.model,
                 messages=conversation.to_messages()
                 + [message.to_dict() for message in messages],
-            )  #! this needs to be more robust later
+            )
             content = completion_alt.choices[0].message.content
             messages.append(
                 Message.create(
@@ -376,9 +375,7 @@ class Assistant:
         return messages
 
     async def _transcribe_audio(self, file_path: Path) -> str:
-        with open(
-            file_path, "rb"
-        ) as file:  # TODO: add exception handling/retries if not inbuilt
+        with open(file_path, "rb") as file:
             # Assuming the async API method is called acreate:
             transcription = await self._openai_client.audio.transcriptions.create(
                 model=self._config.transcription.model,

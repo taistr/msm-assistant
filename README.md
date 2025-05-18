@@ -45,6 +45,7 @@ msm-assistant/
 - Python 3.12+
 - [Poetry](https://python-poetry.org/)
 - (Optional) Qdrant vector database
+- (Optional) OPCUA server
 - (Optional) JoyCon controller (Linux only)
 
 ### Installation

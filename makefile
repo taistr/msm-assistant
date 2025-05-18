@@ -1,7 +1,4 @@
-.PHONY: install lint fmt test
-
-install:
-	poetry install
+.PHONY: lint fmt test
 
 lint:
 	poetry run ruff check --fix

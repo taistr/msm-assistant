@@ -33,10 +33,23 @@ class Controller(ABC):
     async def add_listener(
         self, callback: Callable[[Button, State], Awaitable[None]]
     ) -> str:
+        """
+        Add a listener for button events.
+        Args:
+            callback (Callable[[Button, State], Awaitable[None]]): The callback function to be called on button events.
+        Returns:
+            str: A unique identifier for the listener.
+        """
         listener_id = str(uuid.uuid4())
         self._listeners[listener_id] = callback
         return listener_id
 
     async def remove_listener(self, id: str):
+        """
+        Remove a listener by its unique identifier.
+        Args:
+            id (str): The unique identifier of the listener to be removed.
+        """
+
         if id in self._listeners.keys():
             self._listeners.pop(id)

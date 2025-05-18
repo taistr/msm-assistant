@@ -59,7 +59,6 @@ class Assistant:
             model_response=None,  # TODO: this should come from the conversation later
         )
 
-        # TODO: add an option for keyboard text inputs
         self._controller = (
             JoyCon() if self._config.additional.get("use_joycon") else Keyboard()
         )
@@ -122,6 +121,7 @@ class Assistant:
                 States.SPEAKING.value,
                 States.LISTENING.value,
                 States.RESET.value,
+                States.ERROR.value,
             ],
             dest=States.IDLE.value,
             trigger="start_idle",
@@ -159,6 +159,11 @@ class Assistant:
         self._conversation.reset()
         self._args.user_recording_path = None
         self._args.model_response = None
+
+        await self.start_idle()
+
+    async def on_enter_error(self):
+        logger.error("An error occurred. Please check the logs.")
 
         await self.start_idle()
 
@@ -204,30 +209,43 @@ class Assistant:
                     to_idle = True
 
         listener_id = await self._controller.add_listener(listener)
-        self._args.user_recording_path = await asyncio.to_thread(
-            self._record_audio, stop_flag
-        )
-        await self._controller.remove_listener(listener_id)
+        try:
+            self._args.user_recording_path = await asyncio.to_thread(
+                self._record_audio, stop_flag
+            )
+        except Exception as e:
+            # transition to error state
+            logger.error(f"Error during recording: {e}")
+            await self._controller.remove_listener(listener_id)
+            await self.start_error()
+            return
 
         # transition to processing or idle
+        await self._controller.remove_listener(listener_id)
         if to_idle:
             await self.start_idle()
         else:
             await self.start_processing()
 
     async def on_enter_processing(self):
-        # transcribe speech
-        user_text = await self._transcribe_audio(self._args.user_recording_path)
-        logger.info(f"User: {user_text}")
-        self._conversation.add(Message.create(MessageRole.USER, content=user_text))
+        try:
+            # transcribe speech
+            user_text = await self._transcribe_audio(self._args.user_recording_path)
+            logger.info(f"User: {user_text}")
+            self._conversation.add(Message.create(MessageRole.USER, content=user_text))
 
-        # generate response
-        messages = await self._generate_response(self._conversation)
-        for message in messages:
-            self._conversation.add(message)
+            # generate response
+            messages = await self._generate_response(self._conversation)
+            for message in messages:
+                self._conversation.add(message)
 
-        self._args.model_response = messages[-1].content
-        logger.info(f"Assistant: {self._args.model_response}")
+            self._args.model_response = messages[-1].content
+            logger.info(f"Assistant: {self._args.model_response}")
+        except Exception as e:
+            # transition to error state
+            logger.error(f"Error during processing: {e}")
+            await self.start_error()
+            return
 
         # transition to speech (only if the last 4 operations were successful)
         await self.start_speaking()
@@ -243,10 +261,17 @@ class Assistant:
         # stream the audio while checking for interruptions
         logger.info(f"Generating speech... Press {Button.SECONDARY} to interrupt")
         listener_id = await self._controller.add_listener(listener)
-        await self._generate_speech(self._args.model_response, event)
-        await self._controller.remove_listener(listener_id)
+        try:
+            await self._generate_speech(self._args.model_response, event)
+        except Exception as e:
+            # transition to error state
+            logger.error(f"Error during speech generation: {e}")
+            await self._controller.remove_listener(listener_id)
+            await self.start_error()
+            return
 
         # transition to idle (either through interruption or finishing)
+        await self._controller.remove_listener(listener_id)
         await self.start_idle()
 
     async def _update_state(self):

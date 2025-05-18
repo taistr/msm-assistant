@@ -7,8 +7,9 @@ from .base import Button, Controller, State
 
 logger = logging.getLogger(__name__)
 try:
-    import evdev
+    import evdev as _evdev
 except ImportError:
+    _evdev = None
     logger.warning("JoyCon control is only supported on linux")
 
 
@@ -30,7 +31,9 @@ JOYCON_BUTTONS = [member.value for member in JoyConButton]
 
 
 class JoyCon(Controller):
-    def __init__(self, max_attempts: int = 5):
+    def __init__(self, max_attempts: int = 5, evdev_module=None):
+        self._evdev = evdev_module or _evdev
+
         # ! will only work on Linux due to use of evdev
         self._max_attempts = max_attempts
 
@@ -57,8 +60,8 @@ class JoyCon(Controller):
 
         attempts = 0
         while attempts < self._max_attempts:
-            for path in evdev.list_devices():
-                device = evdev.InputDevice(path)
+            for path in self._evdev.list_devices():
+                device = self._evdev.InputDevice(path)
                 if device.name in DEVICE_NAME:
                     logger.info(f"Connected to JoyCon: {device.name} at {path}")
                     self._joy_con = device
@@ -87,8 +90,8 @@ class JoyCon(Controller):
             await self._connect()
 
         async for event in self._joy_con.async_read_loop():
-            parsed = evdev.categorize(event)
-            if not isinstance(parsed, evdev.KeyEvent):
+            parsed = self._evdev.categorize(event)
+            if not isinstance(parsed, self._evdev.KeyEvent):
                 continue
 
             keycodes = (
@@ -108,39 +111,3 @@ class JoyCon(Controller):
 
                 for callback in self._listeners.values():
                     await callback(button, state)
-
-
-async def main():
-    async def joycon_listener(button: Button, state: State):
-        """Example listener that prints the received button and state."""
-        print(f"JoyCon event: {button.name} - {state.name}")
-
-    # Create JoyCon instance (this will start connecting asynchronously)
-    joycon = JoyCon(max_attempts=5)
-
-    print("JoyCon listen starting. Waiting for input events... (Press Ctrl+C to exit)")
-    try:
-        await joycon.listen()
-
-        # Register our listener callback
-        while True:
-            listener_id = await joycon.add_listener(joycon_listener)
-            print("Added listener")
-
-            await asyncio.sleep(5)
-
-            await joycon.remove_listener(listener_id)
-            print("Removed listener")
-
-            await asyncio.sleep(5)
-
-    except KeyboardInterrupt:
-        print("Keyboard interrupt detected.")
-    finally:
-        # Ensure the JoyCon listener is stopped before exiting
-        await joycon.stop()
-        print("JoyCon listener stopped. Exiting")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

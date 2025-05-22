@@ -30,8 +30,9 @@ from openai.types.chat import ChatCompletionMessage  # noqa: E402
 from msm_assistant.utils.helper.message import AssistantMessage  # noqa: E402
 from msm_assistant.utils.helper.message import Conversation  # noqa: E402
 from msm_assistant.utils.helper.message import Message  # noqa: E402
-from msm_assistant.utils.helper.message import (DeveloperMessage, MessageRole,
-                                                ToolMessage, UserMessage)
+from msm_assistant.utils.helper.message import MessageRole  # noqa: E402
+from msm_assistant.utils.helper.message import (DeveloperMessage, ToolMessage, # noqa: E402
+                                                UserMessage)
 
 # --- Tests for Message registry and factory ---
 

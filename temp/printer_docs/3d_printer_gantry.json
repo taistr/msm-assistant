@@ -1,0 +1,212 @@
+{
+    "name": "3d_printer_gantry",
+    "description": "",
+    "summaries": [
+        {
+            "file": "prusa3d_manual_xl_104_en-pages-8.pdf",
+            "chunks": [
+                "Opening the Original Prusa PDU exposes the user to electric shock and voids the warranty.",
+                "The Original Prusa PDU should be installed with designated mounting holes and M4 screws.",
+                "The Original Prusa PDU is for indoor use only and must be operated in a dry environment.",
+                "Damaged power cables for the Original Prusa PDU can pose an electrical shock hazard.",
+                "The Original Prusa PDU can be powered through a standard socket with 230 VAC, 50 Hz, or 110 VAC, 60 Hz.",
+                "Damaged cables can cause electric shock when using the Original Prusa PDU.",
+                "Disconnect the Original Prusa PDU from the power supply by pulling out the plug.",
+                "The Original Prusa PDU is equipped with a replaceable fuse located in the fuse holder.",
+                "Always ensure that the new fuse has the same value as indicated on the label (F10AH/250V)."
+            ]
+        },
+        {
+            "file": "prusa3d_manual_xl_104_en-pages-1.pdf",
+            "chunks": [
+                "The Original Prusa XL 3D Printing Handbook provides instructions for assembly, handling, and use.",
+                "The handbook is available in multiple languages, including English, German, and Spanish, downloadable from Prusa's website.",
+                "The Quick Guide advises reading safety instructions and installing firmware from prusa3d.com/drivers.",
+                "Prusa Research technical support can be contacted via help.prusa3d.com or info@prusa3d.com.",
+                "Josef Pr\u016f\u0161a developed an interest in 3D printing and open-source RepRap project modifications.",
+                "The Original Prusa XL overview includes package contents, moving guidelines, and error screens.",
+                "The handbook covers first print instructions, calibrations, filament handling, and troubleshooting.",
+                "The handbook includes advanced user guidance for PrusaSlicer and printing in multi-material mode.",
+                "The guide details material-specific printing recommendations for PLA, PETG, ASA, PC, PVB, and PA.",
+                "Regular maintenance includes print sheet care, cleaning, and troubleshooting sensor errors.",
+                "The FAQ section addresses common issues like bed leveling, USB recognition, and heating errors.",
+                "Safety symbols alert to magnetic fields, mechanical parts, and electrical hazards.",
+                "The Original Prusa XL has a power supply of 100-240 VAC and dimensions of 580x700x910 mm.",
+                "Prusa Research declares the Original Prusa XL conforms to EU Directive 2014/53/EU.",
+                "Adhering to safety instructions avoids injury, ensures print quality, and prevents 3D printer damage."
+            ]
+        },
+        {
+            "file": "prusa3d_manual_xl_104_en-pages-2.pdf",
+            "chunks": [
+                "The Original Prusa XL 3D printer is suitable for beginners, hobbyists, companies, and 3D printing farms.",
+                "This handbook covers all available Original Prusa XL models, including assembled and semi-assembled versions.",
+                "The latest version of the handbook is available at prusa3d.com/drivers in PDF format.",
+                "The Original Prusa XL has an extruder, filament sensor, spoolholder, print sheet, LCD, control knob, USB port, and heatbed.",
+                "The single-tool Nextruder has an idler locking mechanism, idler, Nextruder body, nozzle, heater block, and print fan.",
+                "The multi-tool Nextruder features a locking mechanism for the toolchanger, making it different from the single-tool version.",
+                "The Original Prusa XL Multi-Tool Version has extruders, filament sensors, spoolholders, a print sheet, LCD, and a toolchanger.",
+                "The Original Prusa XL package includes a USB drive, XL Tools, silicone sock, alcohol wipes, print sheet, and filament.",
+                "The Original Prusa XL comes with a preinstalled 0.4mm nozzle and can use V6-compatible nozzles with an adapter.",
+                "To move the Original Prusa XL, lift it by the integrated holders on the sides, with assistance due to its weight.",
+                "Always pull the connector, not the cable, when disconnecting the Original Prusa XL power source.",
+                "The Original Prusa XL displays an error screen with a QR code for instructions if a critical error occurs.",
+                "The printer is controlled with a rotary knob to select items and a reset button to stop actions.",
+                "The Selftest calibration wizard starts upon first power on and guides through initial calibration for printing.",
+                "The Original Prusa XL comes standard with a double-sided satin print sheet that must be properly installed.",
+                "Attach the print sheet by aligning the rear cutout with the locking pins, then slowly lay it down after cleaning."
+            ]
+        },
+        {
+            "file": "prusa3d_manual_xl_104_en-pages-3.pdf",
+            "chunks": [
+                "The Printer Selftest should not be manipulated unless the wizard asks you to and the printer should be on a stable surface.",
+                "At least 130 cm (4.5 ft.) of filament is needed for the Selftest and filament sensor calibration.",
+                "The Selftest is a set of tests that serve as a diagnostic tool to detect common problems like incorrect wiring.",
+                "If you have 2-5 toolheads, the printer will automatically detect them and require you to perform offset calibrations.",
+                "When performing the dock offset calibration, ensure the proper tools are used and dropping pins inside the printer is avoided.",
+                "Store the calibration pin in the filament sensor slot on the printer's left side when not in use.",
+                "At least 130 cm (4.3 ft.) of filament is needed for the Filament Sensor Calibration, ideally using a standard spool.",
+                "To calibrate the XL's filament sensor, follow on-screen instructions and switch the spool for the right side insertion points if needed.",
+                "PLA is recommended for initial prints, and one should cut the filament end into a sharp point before inserting it into the PTFE tube.",
+                "The printer will ask if the color of the extruded filament is okay and give options to purge or retry if needed.",
+                "The printer remembers which filament is inserted, and the type is displayed on the LCD menu's lower section.",
+                "The Filament menu allows loading/changing multiple filaments at once on the Original Prusa XL printer.",
+                "To remove filament, select Unload Filament in the menu, and secure the filament when winding it back onto the spool.",
+                "If the filament becomes tangled, remove the spool and unwind the filament until the crossed section is found and fixed.",
+                "Clean the print sheet with isopropyl alcohol and select a test object from the Print menu to start the first print.",
+                "The printer performs Mesh Bed Leveling to create a virtual height map of the surface for a perfect first layer.",
+                "If the plastic is peeling off the bed during the first print, stop the print, clean the bed, and try again.",
+                "Wait for the print sheet to cool before removing the printed object, as the bed can exceed 100\u00b0C.",
+                "Do not use nails to remove plastic remnants; use a plastic spatula.",
+                "Grease on the bed, unsuitable material combinations, axes being obstructed, or incorrect assembly can cause first-layer issues.",
+                "If the nozzle does not start extruding, ensure the PTFE tube is unblocked and the filament can pass through.",
+                "If the nozzle stops extruding after a few hours, remove the hotend and check the steel filament guide.",
+                "Please re-run the Dock or Tool Offset Calibration from the printer's menu if individual tools are not picked up correctly or filament is extruded too high/low.",
+                "If the printer makes rattling sounds, double-check the side panels are properly secured; if the filament sensor isn't working, check the filament sensor connection.",
+                "Make sure the extruders are correctly connected, otherwise the printer may not boot and display an error.",
+                "If the printer does not turn on, check the power supply, wiring, and potentially force a firmware installation.",
+                "Check prusa3d.com/drivers for the latest firmware and update by copying the .BBF file to a USB drive and restarting the printer.",
+                "Sample models on the USB drive test the printer's basic functionality; incorrect slicing may cause print failures.",
+                "A Factory Reset can be done to revert to default settings if changes negatively affect the printer's performance."
+            ]
+        },
+        {
+            "file": "prusa3d_manual_xl_104_en-pages-7.pdf",
+            "chunks": [
+                "Users can download a 3D-printed applicator from Printables.com for additional assistance.",
+                "The printer measures fan RPM and reports errors if a fan slows down, potentially due to obstructions.",
+                "Fans should be checked and cleaned every few hundred printing hours, using compressed air or tweezers.",
+                "The extruder feeding gear needs no lubricant, but may accumulate filament powder that should be removed.",
+                "Opening the gearbox on the extruder voids the warranty, so users should never tamper with it.",
+                "Clogged extruders cause issues with printing or loading filament, which can be addressed by adjusting idler screws.",
+                "It's recommended to regularly clean the feed wheel of all filament remnants in the extruder.",
+                "The nozzle should not be touched when hot, and the heated bed should be lowered for better access during cleaning.",
+                "If filament doesn't come out of the nozzle, check the idler, temperatures, and extruder fan.",
+                "If the filament strand is not visible, the issue is likely in the PTFE tubes requiring inspection.",
+                "Clogged nozzles can be cleaned by heating the nozzle, feeding filament, and inserting an acupuncture needle.",
+                "Original Prusa XL has filament sensors that require correct wiring to ensure proper function.",
+                "The Original Prusa XL's toolchanger is designed to be maintenance-free and should be kept clean.",
+                "PTFE tubes for extruders require maintenance but are mostly maintenance free unless damaged or full of debris.",
+                "When an extruder is parked, the nozzle should be cleaned as needed of excess plastic.",
+                "Flashing unofficial firmware voids the warranty and can compromise printer safety features.",
+                "The Original Prusa XL displays error screens with links to detailed troubleshooting articles on help.prusa3d.com.",
+                "Mesh Bed Leveling failures may be due to the Loadcell sensor or Z-axis misalignment, requiring calibration.",
+                "If the printer doesn't recognize a USB drive, try restarting the printer or using a FAT32-formatted drive.",
+                "Loose belts cause printing errors, and their tension should be checked and adjusted as needed.",
+                "A homing failure usually comes from a blockage in one or more axes and can be fixed by moving the crash detection sensitivity in the settings menu.",
+                "If there is a heating error, check the connections of the heating element and thermistors.",
+                "If a fan error occurs, inspect the fans on the print head for clogs or other issues.",
+                "Reverting to an older firmware can be done by uploading the firmware file to a FAT32 USB drive and flashing it.",
+                "Nozzle lifting/ Z-axis issues can be fixed by ensuring proper wiring and performing Auto Home calibration on all axes.",
+                "Troubleshooting guides for component replacements and advanced hardware issues can be found online at help.prusa3d.com.",
+                "Print quality issues must be addressed by finding the cause of the issue and addressing it.",
+                "The Original Prusa PDU is a power strip and users should carefully read the documentation to properly maintain it."
+            ]
+        },
+        {
+            "file": "prusa3d_manual_xl_104_en-pages-6.pdf",
+            "chunks": [
+                "The material guide offers a brief overview of popular 3D printing materials, with a full table available online at help.prusa3d.com/materials.",
+                "Prusament is Prusa's in-house line of high-quality filaments, closely monitored and tested to ensure every spool is perfect.",
+                "PLA is the most commonly used material for 3D printing, known for its ease of use and ability to print detailed models.",
+                "PETG is a popular material for 3D printing, offering good temperature resistance and flexibility, and is used to print Prusa printers parts.",
+                "ASA is a strong and versatile material with good thermal and wear resistance, suitable for outdoor use and smoothing with acetone vapors.",
+                "Polycarbonate is a technical material with excellent strength and high-temperature resistance, suitable for technical components, but demanding to print.",
+                "PVB is easily smoothed with isopropyl alcohol, making it suitable for transparent models, but requires dry storage to avoid moisture absorption.",
+                "Flexible filaments are strong and elastic, ideal for phone cases and RC car parts, but require a special procedure for insertion.",
+                "Polyamide is a durable material with high-temperature resistance, ideal for stressed parts, but must be kept dry to maintain adhesion.",
+                "Regular maintenance of the Original Prusa XL involves cleaning flexible print sheets and linear rails to ensure optimal performance.",
+                "Different types of print sheets (textured, smooth, satin) require different cleaning agents and procedures, with acetone being harmful to some.",
+                "Textured print sheets are resistant to damage, while smooth print sheets require a glue separation layer for certain materials like PETG and ASA.",
+                "Satin print sheets are suitable for PLA and PETG, but require quality isopropyl alcohol for cleaning and may need a brim or raft for ASA and PC Blend.",
+                "Improving adhesion may be necessary for very tall objects or materials with weak adhesion to PEI, and should consider the Brim feature.",
+                "Keeping the printer clean involves removing debris from inside the printer, and linear rails should be wiped with a dry tissue.",
+                "Threaded rods may require lubrication with Prusa Lube if they start producing noise, as part of regular printer maintenance."
+            ]
+        },
+        {
+            "file": "prusa3d_manual_xl_104_en-pages-4.pdf",
+            "chunks": [
+                "The Advanced User Guide covers network connection, printing models, and slicing after successfully printing the sample object.",
+                "Prusa Academy provides online courses on 3D printing topics with texts, videos, quizzes, and certificates.",
+                "Printables.com offers high-quality 3D models managed by Prusa Research with contests and a rewards system.",
+                "Models are available for download for free under the Creative Commons license or for a small fee on websites like Printables.com.",
+                "Models in formats such as .stl and .obj need to be sliced into a G-code file before printing.",
+                "Users can create 3D models using 3D editors like Tinkercad and Autodesk Fusion 360.",
+                "G-code files contain instructions for the printer's nozzle movement, filament extrusion, and temperature settings.",
+                "PrusaSlicer is Prusa's in-house developed slicer software, that exports print files, with features like a simple UI and print settings.",
+                "Users can download PrusaSlicer at prusaslicer.com, with unstable alpha/beta versions available on GitHub.",
+                "PrusaSlicer's interface includes settings for printing speed and quality, material and printer selection, and model information.",
+                "To set up PrusaSlicer, select Original Prusa XL and choose a layer height like 0.20 or 0.25 mm for good results.",
+                "PrusaSlicer allows importing STL, OBJ, AMF, STEP, and 3MF formats, with model modification tools on the left sidebar.",
+                "Supports are printed structures resembling scaffolding for complex objects and can be separated after printing.",
+                "Users can choose support generation options like Support on Build Plate Only, For Support Enforcers Only, or Everywhere.",
+                "The printing speed is affected by layer height and users can choose a profile (such as detail or speed) in PrusaSlicer.",
+                "Infill affects the printing speed, strength and appearance of the object, and you can choose a higher density for solid structures.",
+                "The brim increases adhesion to the bed and reduces the risk of warping, especially if the model touches the bed only in small area.",
+                "The Original Prusa XL printer has a print volume of 360 x 360 x 360 mm, and you can use the Cut tool to print large objects."
+            ]
+        },
+        {
+            "file": "prusa3d_manual_xl_104_en-pages-5.pdf",
+            "chunks": [
+                "PrusaSlicer allows for multi-colored prints by setting up different colors on different layers for single-tool XL printers.",
+                "To set up multi-material printing in PrusaSlicer, you need to import objects in .3MF, .AMF, or .STL formats.",
+                "The Original Prusa XL needs the correct materials, colors, and extruders set up to achieve multi-material printing.",
+                "PrusaSlicer allows assigning materials to specific extruders and extruders to individual model parts.",
+                "PrusaSlicer provides options for virtual painting with the Original Prusa XL Multi-Tool that can paint the model in different colors.",
+                "A priming tower is used to stabilize the pressure inside the nozzle once an extruder is unparked from the dock.",
+                "Soluble supports, such as PVA and BVOH, are used in 3D printing and can be dissolved in a solvent.",
+                "Water-soluble filament can be used as a soluble support interface only to reduce the amount of material needed.",
+                "The final check of the sliced object in Preview is crucial to identify problematic spots and ensure proper printing.",
+                "The Original Prusa XL comes equipped with a 0.4mm nozzle by default, and a wide range of nozzles are available on the e-shop."
+            ]
+        },
+        {
+            "file": "Project Proposal.pdf",
+            "chunks": [
+                "The ENG/FIT4701 project proposes using sensitive robots and intelligent grippers for 3D printer part removal at Monash University.",
+                "The project aims to automate key processes in 3D printing, enhancing material handling and maintenance in smart manufacturing.",
+                "Objectives include designing a H-gantry system with an x-y setup, integrating transmission structures for vertical movement, and automating panel removal.",
+                "The project will program a PLC for lab server interface and develop a HMI for manual gantry control.",
+                "Testing will simulate scenarios to test the gantry system's responsiveness for automation and efficiency.",
+                "The 3D printing advancements are propelling industries into the next era with benefits of rapid and reduced costs.",
+                "Prusa AFS is a complete machine reference but its high cost makes it impractical, leading to exploring alternatives.",
+                "CoreXY structures are dismissed due to instability in vertical positioning.",
+                "The project will implement a fixed H-gantry for stability and an ideal removal device attached to the gantry system.",
+                "The system must move to the center of printer beds, ensure safety, and showcase as a digital twin lab.",
+                "The gantry must operate between a printer and drop-off point at a minimum of 2 minutes.",
+                "The proposed H-gantry features 2 motors, with the stepper motors providing the necessary torque and accuracy.",
+                "Communication with the server for the gantry system will be facilitated by a PLC, fulfilling requirement [F.004].",
+                "A human machine interface (HMI) will be added to fulfil functional requirement 5 connected to PLC.",
+                "The drawers will use a locking system to avoid collisions, preventing movement while the gantry operates and fulfilling requirement [S.001].",
+                "A physical barrier and LEDs will be placed around the gantry to isolate it and alert of operations.",
+                "A force metre will be attached to the belts, to detect collisions by measuring a spike in force.",
+                "The project scope includes designing and constructing a gantry system and implementing a safety system.",
+                "The project will mount motors robustly, assess system stability, and define operational limits.",
+                "Details out of the scope include a camera system, part storage, and tool development for print removal."
+            ]
+        }
+    ]
+}

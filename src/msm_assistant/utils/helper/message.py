@@ -117,11 +117,3 @@ class Conversation:
 
         messages.insert(0, self._prompt.to_dict())
         return messages
-
-
-if __name__ == "__main__":
-    user_msg = Message.create("user", content="Hello there!")
-    print(user_msg.to_dict())
-
-    dev_msg = Message.create("developer", content="System update available.")
-    print(dev_msg.to_dict())

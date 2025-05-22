@@ -26,6 +26,15 @@ class JoyConButton(Enum):
     SL = "BTN_TL"
     SR = "BTN_TL2"
 
+    DPAD_UP = "BTN_DPAD_UP"
+    DPAD_DOWN = "BTN_DPAD_DOWN"
+    DPAD_LEFT = "BTN_DPAD_LEFT"
+    DPAD_RIGHT = "BTN_DPAD_RIGHT"
+    SELECT = "BTN_SELECT"
+    CAPTURE = "BTN_Z"
+    L = "BTN_TL"
+    ZL = "BTN_TL2"
+
 
 JOYCON_BUTTONS = [member.value for member in JoyConButton]
 
@@ -55,7 +64,12 @@ class JoyCon(Controller):
                 self._task = None
 
     async def _connect(self) -> None:
-        DEVICE_NAME = ["Nintendo Switch Right Joy-Con", "Joy-Con (R)"]
+        DEVICE_NAME = [
+            "Nintendo Switch Right Joy-Con", 
+            "Joy-Con (R)",
+            "Nintendo Switch Left Joy-Con",
+            "Joy-Con (L)",
+            ]
         SLEEP_TIME = 1  # seconds
 
         attempts = 0
@@ -72,13 +86,15 @@ class JoyCon(Controller):
             logger.warning("JoyCon not found, retrying ...")
             await asyncio.sleep(SLEEP_TIME)
 
-        raise RuntimeError("Failed connec to JoyCon after several attempts")
+        raise RuntimeError("Failed connection to JoyCon after several attempts")
 
     @staticmethod
     def _get_generic_button(key: JoyConButton) -> Button | None:
         JOYCON_MAPPING = {
             JoyConButton.A: Button.PRIMARY,
             JoyConButton.B: Button.SECONDARY,
+            JoyConButton.DPAD_RIGHT: Button.PRIMARY,
+            JoyConButton.DPAD_DOWN: Button.SECONDARY,
         }
 
         if key in JOYCON_MAPPING:

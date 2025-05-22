@@ -24,13 +24,14 @@ sys.modules["openai"] = openai_module
 sys.modules["openai.types"] = types_module
 sys.modules["openai.types.chat"] = chat_module
 
-from openai.types.chat import ChatCompletionMessage # noqa: E402
+from openai.types.chat import ChatCompletionMessage  # noqa: E402
 
 # --- Import module under test ---
-from msm_assistant.utils.helper.message import (AssistantMessage, Conversation, # noqa: E402
-                                                DeveloperMessage, Message,
-                                                MessageRole, ToolMessage,
-                                                UserMessage) 
+from msm_assistant.utils.helper.message import AssistantMessage  # noqa: E402
+from msm_assistant.utils.helper.message import Conversation  # noqa: E402
+from msm_assistant.utils.helper.message import Message  # noqa: E402
+from msm_assistant.utils.helper.message import (DeveloperMessage, MessageRole,
+                                                ToolMessage, UserMessage)
 
 # --- Tests for Message registry and factory ---
 

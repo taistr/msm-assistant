@@ -27,13 +27,15 @@ fake_models = types.SimpleNamespace(
 sys.modules["qdrant_client.models"] = fake_models
 
 
-from types import SimpleNamespace # noqa: E402
+from types import SimpleNamespace  # noqa: E402
 
 # ─── NOW import your module under test ───────────────────────────────────────
-import pytest # noqa: E402
+import pytest  # noqa: E402
 
-from msm_assistant.utils.helper.tools.knowledge_base import (KnowledgeBase, # noqa: E402
-                                                             Metadata) 
+from msm_assistant.utils.helper.tools.knowledge_base import \
+    KnowledgeBase  # noqa: E402
+from msm_assistant.utils.helper.tools.knowledge_base import \
+    Metadata  # noqa: E402
 
 
 # ─── METADATA tests ──────────────────────────────────────────────────────────

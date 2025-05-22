@@ -165,7 +165,7 @@ class Assistant:
     async def on_enter_error(self):
         logger.error("An error occurred. Please check the logs.")
 
-        await self.start_idle()
+        await self.start_reset()
 
     async def on_enter_idle(self):
         # await on controller input
@@ -195,6 +195,8 @@ class Assistant:
             await self.start_listening()
 
     async def on_enter_listening(self):
+        TIMEOUT = 10  # seconds
+
         # wait for a button press
         stop_flag = threading.Event()
         to_idle = False
@@ -210,9 +212,14 @@ class Assistant:
 
         listener_id = await self._controller.add_listener(listener)
         try:
-            self._args.user_recording_path = await asyncio.to_thread(
-                self._record_audio, stop_flag
+            self._args.user_recording_path = await asyncio.wait_for(
+                asyncio.to_thread(self._record_audio, stop_flag),
+                timeout=TIMEOUT,
             )
+        except asyncio.TimeoutError:
+            logger.warning("Recording timed out")
+            stop_flag.set()
+            to_idle = True
         except Exception as e:
             # transition to error state
             logger.error(f"Error during recording: {e}")

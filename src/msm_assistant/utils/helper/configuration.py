@@ -123,6 +123,7 @@ class DatabaseConfig:
 
         self.url: str = config["url"]
         self.collection: str = config["collection"]
+        self.description: str = config["description"]
 
     def _verify(self, config: dict):
         if "url" not in config:
@@ -133,6 +134,11 @@ class DatabaseConfig:
         if "collection" not in config:
             raise ConfigurationError(
                 "The database configuration needs to contain a 'collection' field."
+            )
+        
+        if "description" not in config:
+            raise ConfigurationError(
+                "The database configuration needs to contain a 'description' field."
             )
 
 

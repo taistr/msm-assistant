@@ -32,9 +32,9 @@ from types import SimpleNamespace  # noqa: E402
 # ─── NOW import your module under test ───────────────────────────────────────
 import pytest  # noqa: E402
 
-from msm_assistant.utils.helper.tools.knowledge_base import \
-    KnowledgeBase  # noqa: E402
-from msm_assistant.utils.helper.tools.knowledge_base import \
+from msm_assistant.utils.helper.tools.database_read import \
+    DatabaseRead  # noqa: E402
+from msm_assistant.utils.helper.tools.database_read import \
     Metadata  # noqa: E402
 
 
@@ -55,8 +55,8 @@ def test_metadata_to_from_dict():
 
 # ─── name() and get_definition() ────────────────────────────────────────────
 def test_name_and_definition():
-    assert KnowledgeBase.name() == "search_knowledge_base"
-    kb = KnowledgeBase(url="u", collection="col")
+    assert DatabaseRead.name() == "search_knowledge_base"
+    kb = DatabaseRead(url="u", collection="col")
     fn = kb.get_definition()["function"]
     assert fn["name"] == "search_knowledge_base"
     assert "Query a knowledge base" in fn["description"]
@@ -74,7 +74,7 @@ class FakePoint:
 # ─── _encode() ───────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
 async def test_encode(monkeypatch):
-    kb = KnowledgeBase(url="u", collection="col")
+    kb = DatabaseRead(url="u", collection="col")
     kb._metadata = Metadata("col", "emb-model", 5)
     fake_resp = SimpleNamespace(data=[SimpleNamespace(embedding=[1, 2, 3])])
 

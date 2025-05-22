@@ -1,6 +1,22 @@
-from importlib.resources import as_file, files
+import evdev as evdev
 
-wav_resource = files("msm_assistant.assets").joinpath("airplane_ding.wav")
-with as_file(wav_resource) as path:
-    # path is a pathlib.Path you can hand to sounddevice, pydub, etc.
-    print(path)
+DEVICE_NAME = "Nintendo Switch Left Joy-Con"
+
+joycon = None
+# Find the joycon device
+for path in evdev.list_devices():
+    device = evdev.InputDevice(path)
+    print(f"Checking: {device.name}")
+    if device.name == DEVICE_NAME:
+        joycon = device
+        break
+
+joycon: evdev.InputDevice | None
+
+if joycon is None:
+    raise RuntimeError("JoyCon not found")
+
+# print the device inputs
+for event in joycon.read_loop():
+    parsed = evdev.categorize(event)
+    print(parsed)

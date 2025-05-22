@@ -6,11 +6,13 @@ import tempfile
 import threading
 import wave
 from dataclasses import dataclass
+from importlib.resources import as_file, files
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import sounddevice as sd
+import soundfile as sf
 from asyncua import Client, ua
 from openai import AsyncOpenAI
 from transitions.extensions.asyncio import AsyncMachine
@@ -56,7 +58,7 @@ class Assistant:
 
         self._args = Arguments(
             user_recording_path=None,
-            model_response=None,  # TODO: this should come from the conversation later
+            model_response=None,
         )
 
         self._controller = (
@@ -165,9 +167,21 @@ class Assistant:
     async def on_enter_error(self):
         logger.error("An error occurred. Please check the logs.")
 
+        sound_path = files("msm_assistant.assets").joinpath("error.wav")
+        with as_file(sound_path) as path:
+            # path is a pathlib.Path you can hand to sounddevice, pydub, etc.
+            data, sample_rate = sf.read(path, dtype="int16")
+            sd.play(data, sample_rate, blocking=True)
+
         await self.start_reset()
 
     async def on_enter_idle(self):
+        # play idle sound
+        sound_path = files("msm_assistant.assets").joinpath("available_chime.wav")
+        with as_file(sound_path) as path:
+            data, sample_rate = sf.read(path, dtype="int16")
+            sd.play(data, sample_rate, blocking=True)
+
         # await on controller input
         event = asyncio.Event()
         to_reset = False
@@ -196,6 +210,12 @@ class Assistant:
 
     async def on_enter_listening(self):
         TIMEOUT = 10  # seconds
+
+        # play listening sound
+        sound_path = files("msm_assistant.assets").joinpath("button_chime.wav")
+        with as_file(sound_path) as path:
+            data, sample_rate = sf.read(path, dtype="int16")
+            sd.play(data, sample_rate, blocking=True)
 
         # wait for a button press
         stop_flag = threading.Event()
@@ -235,6 +255,12 @@ class Assistant:
             await self.start_processing()
 
     async def on_enter_processing(self):
+        # play processing sound
+        sound_path = files("msm_assistant.assets").joinpath("correct_chime.wav")
+        with as_file(sound_path) as path:
+            data, sample_rate = sf.read(path, dtype="int16")
+            sd.play(data, sample_rate, blocking=True)
+
         try:
             # transcribe speech
             user_text = await self._transcribe_audio(self._args.user_recording_path)
@@ -251,6 +277,7 @@ class Assistant:
         except Exception as e:
             # transition to error state
             logger.error(f"Error during processing: {e}")
+            sd.stop()
             await self.start_error()
             return
 
@@ -258,6 +285,12 @@ class Assistant:
         await self.start_speaking()
 
     async def on_enter_speaking(self):
+        # play speaking sound
+        sound_path = files("msm_assistant.assets").joinpath("start_chime.wav")
+        with as_file(sound_path) as path:
+            data, sample_rate = sf.read(path, dtype="int16")
+            sd.play(data, sample_rate, blocking=True)
+
         event = asyncio.Event()
 
         async def listener(button: Button, state: State):

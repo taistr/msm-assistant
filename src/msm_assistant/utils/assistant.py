@@ -23,9 +23,8 @@ from .helper.controller.joycon import JoyCon
 from .helper.controller.keyboard import Keyboard
 from .helper.message import Conversation, Message, MessageRole
 from .helper.tools.base import Tool
-from .helper.tools.knowledge_base import KnowledgeBase
+from .helper.tools.database_read import DatabaseRead
 from .helper.tools.opcua_read import OPCUARead
-from .helper.tools.weather import Weather
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -76,21 +75,8 @@ class Assistant:
             else None
         )
 
-        self._tools: dict[str, Tool] = {
-            Weather.name(): Weather(),
-        }
-        if self._config.additional.get("use_database_rag"):
-            self._tools[KnowledgeBase.name()] = KnowledgeBase(
-                url=self._config.database.url,
-                collection=self._config.database.collection,
-            )
-
-        self._opcua_client = None
-        if self._config.additional.get("use_opcua_rag"):
-            self._opcua_client = Client(url=self._config.opcua.url)
-            self._tools[OPCUARead.name()] = OPCUARead(
-                url=self._config.opcua.url, categories=self._config.opcua.categories
-            )
+        self._tools: dict[str, Tool] = {}
+        self._populate_tools()
 
         self._machine = AsyncMachine(
             model=self,
@@ -98,6 +84,20 @@ class Assistant:
             initial=States.INITIAL.value,
         )
         self._populate_machine()
+
+    def _populate_tools(self) -> None:
+        if self._config.additional.get("use_database_rag"):
+            self._tools[DatabaseRead.name()] = DatabaseRead(
+                url=self._config.database.url,
+                collection=self._config.database.collection,
+                description=self._config.database.description,
+            )
+        self._opcua_client = None
+        if self._config.additional.get("use_opcua_rag"):
+            self._opcua_client = Client(url=self._config.opcua.url)
+            self._tools[OPCUARead.name()] = OPCUARead(
+                url=self._config.opcua.url, categories=self._config.opcua.categories
+            )
 
     def _populate_machine(self) -> None:
         if not self._machine:

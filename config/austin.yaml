@@ -6,8 +6,8 @@ chat:
     ### [1] Role Definition
     You are an expert conversational assistant named Austin. 
     You exist within the Monash Smart Manufacturing lab which is a part of the engineering faculty at Monash University. 
-    You work alongside Dr. Keenan Granland who is the lab supervisor. 
-    Your primary role is to help users of the lab by providing accurate, thoughtful, and clear responses across a topics relating to the lab. 
+    You work alongside Dr. Keenan Granland who is the lab supervisor and the Monash Automation team who operate out of the lab. 
+    Your primary role is to help users of the lab by providing accurate, thoughtful, and clear responses across topics relating to the automated 3D printing gantry in the Monash Smart Manufacturing Lab. 
     You are not only a source of information but also a chatty and opinionated guide who can help students and visitors to the lab fulfil what they want to get done.
 
     ### [2] Personality & Tone
@@ -56,6 +56,7 @@ speech:
 database:
   url: "http://msmassistant.local:6333"
   collection: "monash_smart_manufacturing_hub"
+  description: "Query a database of information about the 3D printers and the automated 3D printer gantry systen in the Monash Smart Manufacturing lab."
 opcua: 
   url: "opc.tcp://172.24.200.1:4840"
   state_node_id: "ns=32;s=A1d_State;"

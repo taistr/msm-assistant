@@ -31,12 +31,14 @@ class Metadata:
         )
 
 
-class KnowledgeBase(Tool):
+class DatabaseRead(Tool):
     def __init__(
-        self, url: str, collection: str
+        self, url: str, collection: str, description: str | None = None
     ):  #! consider making the description a parameter
         self._url = url
         self._collection = collection
+        self._description = description if description else "Query a vector database to retrieve additional information to the Monash Smart Manufacturing Lab or your subsystem."
+
 
         self._qdrant_client = AsyncQdrantClient(url=self._url)
         self._openai_client = AsyncOpenAI()
@@ -117,14 +119,14 @@ class KnowledgeBase(Tool):
             "type": "function",
             "function": {
                 "name": self.name(),
-                "description": "Query a knowledge base to retrieve relevant info on a topic related to the Monash Smart Manufacturing Lab",
+                "description": self._description,
                 "strict": True,
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
-                            "description": "The user question or search query for searching the knowledge base.",
+                            "description": "The question, keywords, or phrase to use for searching the database.",
                         },
                         "limit": {
                             "type": "integer",
